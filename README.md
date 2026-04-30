@@ -7,7 +7,7 @@ This repository wires together reusable Terraform modules from
 single-node MicroK8s cluster on a Hetzner Cloud
 [CX42](https://www.hetzner.com/cloud) server (8 vCPU, 16 GB RAM, 160 GB SSD,
 ~€16.40/month) plus the supporting platform components (Traefik ingress with
-Cloudflare tunnel + SSO, Twingate connector).
+Cloudflare tunnel + SSO).
 
 Terraform state, secrets, and the OIDC discovery document live in Azure
 (remote backend storage account, Key Vault, static website).
@@ -19,7 +19,6 @@ Terraform state, secrets, and the OIDC discovery document live in Azure
 | `provision_hetzner_server` | Creates the Hetzner Cloud CX42 server with cloud-init bootstrap |
 | `setup_cluster` | Hardens the server, installs MicroK8s, enables Azure Workload Identity OIDC |
 | `setup_ingress_controller` | Installs Traefik, configures Cloudflare Tunnel, ZTNA SSO via Entra ID |
-| `setup_twingate` | Installs the Twingate connector inside the cluster |
 
 ## Prerequisites
 
@@ -60,13 +59,11 @@ Populate the following secrets in the `p07` Key Vault before running
 | `cloudflare-api-token` | Cloudflare API token for DNS and tunnel management | [Cloudflare dashboard → My Profile → API Tokens → Create Token](https://dash.cloudflare.com/profile/api-tokens) |
 | `cloudflare-team-domain` | Cloudflare Zero Trust team domain | [Cloudflare Zero Trust dashboard → Settings → Custom Pages](https://one.dash.cloudflare.com/) |
 | `authorized-as` | Authorized identity/email for SSO access policies | [Microsoft Entra admin center → Users](https://entra.microsoft.com/#view/Microsoft_AAD_UsersAndTenants/UserManagementMenuBlade/~/AllUsers) |
-| `twingate-api-token` | Twingate API token with Read, Write & Provision permissions | Twingate Admin → Settings → API (`https://<network>.twingate.com/settings/account/api`); see the [API guide](https://docs.twingate.com/docs/api-overview) |
-| `twingate-network` | Twingate network name (e.g. `mynetwork` from `mynetwork.twingate.com`) | URL prefix shown when signed in to your [Twingate admin console](https://www.twingate.com/) |
 | `github-token` | GitHub personal access token with `repo` scope | [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens) |
 
 Terraform will write back the following Key Vault secrets after a successful
 apply: `host`, `ssh-user-name`, `ssh-port`, `ssh-private-key`, `user-password`,
-`issuer`, `tenant-id`, `twingate-service-key`, plus the cluster credentials
+`issuer`, `tenant-id` plus the cluster credentials
 written by the `setup_cluster` module (`k8s-config`, `k8s-host`,
 `k8s-client-certificate`, `k8s-client-key`, `k8s-cluster-ca-certificate`).
 

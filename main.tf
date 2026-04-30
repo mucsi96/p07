@@ -40,11 +40,6 @@ terraform {
       version = "5.18.0"
     }
 
-    twingate = {
-      source  = "Twingate/twingate"
-      version = "4.1.1"
-    }
-
     github = {
       source  = "integrations/github"
       version = ">= 6.0.0"
@@ -122,16 +117,6 @@ data "azurerm_key_vault_secret" "authorized_as" {
   name         = "authorized-as"
 }
 
-data "azurerm_key_vault_secret" "twingate_api_token" {
-  key_vault_id = data.azurerm_key_vault.kv.id
-  name         = "twingate-api-token"
-}
-
-data "azurerm_key_vault_secret" "twingate_network" {
-  key_vault_id = data.azurerm_key_vault.kv.id
-  name         = "twingate-network"
-}
-
 data "azurerm_key_vault_secret" "github_token" {
   key_vault_id = data.azurerm_key_vault.kv.id
   name         = "github-token"
@@ -165,18 +150,13 @@ provider "cloudflare" {
   api_token = data.azurerm_key_vault_secret.cloudflare_api_token.value
 }
 
-provider "twingate" {
-  api_token = data.azurerm_key_vault_secret.twingate_api_token.value
-  network   = data.azurerm_key_vault_secret.twingate_network.value
-}
-
 provider "github" {
   owner = "mucsi96"
   token = data.azurerm_key_vault_secret.github_token.value
 }
 
 module "provision_hetzner_server" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/provision_hetzner_server?ref=v-4"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/provision_hetzner_server?ref=v-6"
 
   server_name = var.environment_name
   server_type = "cx43"
@@ -188,7 +168,7 @@ module "provision_hetzner_server" {
 }
 
 module "setup_cluster" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_cluster?ref=v-4"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_cluster?ref=v-6"
 
   host                  = module.provision_hetzner_server.ipv4_address
   initial_port          = module.provision_hetzner_server.ssh_port
@@ -203,7 +183,7 @@ module "setup_cluster" {
 }
 
 module "setup_ingress_controller" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_ingress_controller?ref=v-4"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_ingress_controller?ref=v-6"
 
   environment_name       = var.environment_name
   subscription_id        = var.azure_subscription_id
@@ -219,12 +199,89 @@ module "setup_ingress_controller" {
   depends_on             = [module.setup_cluster]
 }
 
-module "setup_twingate" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_twingate?ref=v-4"
+module "create_database_namespace" {
+  source           = "git::https://github.com/mucsi96/k8s-modules.git//modules/create_app_namespace?ref=v-6"
+  environment_name = var.environment_name
+  k8s_namespace    = "db"
 
-  environment_name   = var.environment_name
-  twingate_network   = data.azurerm_key_vault_secret.twingate_network.value
-  twingate_api_token = data.azurerm_key_vault_secret.twingate_api_token.value
-  k8s_host           = module.provision_hetzner_server.ipv4_address
-  depends_on         = [module.setup_cluster]
+  k8s_host                   = module.setup_cluster.k8s_host
+  k8s_cluster_ca_certificate = module.setup_cluster.k8s_cluster_ca_certificate
+  wait_for                   = module.setup_ingress_controller.traefik_ready
+}
+
+module "create_database" {
+  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/create_postgres_database?ref=v-6"
+  k8s_name      = "postgres1"
+  k8s_namespace = module.create_database_namespace.k8s_namespace
+  db_name       = "postgres1"
+}
+
+locals {
+  owner = data.azurerm_client_config.current.object_id
+}
+
+module "setup_backup_app" {
+  source                     = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_backup_app?ref=v-6"
+  environment_name           = var.environment_name
+  azure_location             = var.azure_location
+  owner                      = local.owner
+  k8s_host                   = module.setup_cluster.k8s_host
+  k8s_cluster_ca_certificate = module.setup_cluster.k8s_cluster_ca_certificate
+  k8s_oidc_issuer_url        = module.setup_cluster.oidc_issuer_url
+  hostname                   = data.azurerm_key_vault_secret.dns_zone.value
+  tenant_id                  = data.azurerm_client_config.current.tenant_id
+  db_username                = module.create_database.username
+  db_password                = module.create_database.password
+  wait_for                   = module.setup_ingress_controller.traefik_ready
+
+  azure_storage_account_resource_group_name = "ibari"
+  azure_storage_account_name                = "ibari"
+}
+
+module "setup_learn_language_app" {
+  source                     = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_learn_language_app?ref=v-6"
+  environment_name           = var.environment_name
+  azure_location             = var.azure_location
+  owner                      = local.owner
+  k8s_host                   = module.setup_cluster.k8s_host
+  k8s_cluster_ca_certificate = module.setup_cluster.k8s_cluster_ca_certificate
+  k8s_oidc_issuer_url        = module.setup_cluster.oidc_issuer_url
+  hostname                   = data.azurerm_key_vault_secret.dns_zone.value
+  tenant_id                  = data.azurerm_client_config.current.tenant_id
+  db_jdbc_url                = module.create_database.jdbc_url
+  db_username                = module.create_database.username
+  db_password                = module.create_database.password
+  wait_for                   = module.setup_ingress_controller.traefik_ready
+}
+
+module "setup_hello_app" {
+  source                     = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_hello_app?ref=v-6"
+  environment_name           = var.environment_name
+  azure_location             = var.azure_location
+  owner                      = local.owner
+  k8s_host                   = module.setup_cluster.k8s_host
+  k8s_cluster_ca_certificate = module.setup_cluster.k8s_cluster_ca_certificate
+  k8s_oidc_issuer_url        = module.setup_cluster.oidc_issuer_url
+  hostname                   = data.azurerm_key_vault_secret.dns_zone.value
+  tenant_id                  = data.azurerm_client_config.current.tenant_id
+  db_jdbc_url                = module.create_database.jdbc_url
+  db_username                = module.create_database.username
+  db_password                = module.create_database.password
+  wait_for                   = module.setup_ingress_controller.traefik_ready
+}
+
+module "setup_training_log_app" {
+  source                     = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_training_log_app?ref=v-6"
+  environment_name           = var.environment_name
+  azure_location             = var.azure_location
+  owner                      = local.owner
+  k8s_host                   = module.setup_cluster.k8s_host
+  k8s_cluster_ca_certificate = module.setup_cluster.k8s_cluster_ca_certificate
+  k8s_oidc_issuer_url        = module.setup_cluster.oidc_issuer_url
+  hostname                   = data.azurerm_key_vault_secret.dns_zone.value
+  tenant_id                  = data.azurerm_client_config.current.tenant_id
+  db_jdbc_url                = module.create_database.jdbc_url
+  db_username                = module.create_database.username
+  db_password                = module.create_database.password
+  wait_for                   = module.setup_ingress_controller.traefik_ready
 }
