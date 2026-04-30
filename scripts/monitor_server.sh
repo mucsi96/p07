@@ -42,7 +42,12 @@ df -hT -x tmpfs -x devtmpfs -x squashfs -x overlay
 if [ "$ONCE" = true ]; then
   remote_cmd="$remote_snapshot"
 else
-  remote_cmd="while true; do printf '\\033[H\\033[2J'; $remote_snapshot; sleep $INTERVAL; done"
+  remote_cmd="while true
+do
+printf '\\033[H\\033[2J'
+$remote_snapshot
+sleep $INTERVAL
+done"
 fi
 
 exec "$SCRIPT_DIR/ssh_to_server.sh" "$remote_cmd"
