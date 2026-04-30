@@ -50,19 +50,19 @@ bash scripts/init.sh p07
 Populate the following secrets in the `p07` Key Vault before running
 `terraform apply`:
 
-| Secret Name | Description |
-|---|---|
-| `hcloud-token` | Hetzner Cloud API token with read & write permissions |
-| `dns-zone` | DNS zone domain used by all applications |
-| `letsencrypt-email` | Email address for Let's Encrypt certificate registration |
-| `cloudflare-zone-id` | Cloudflare zone ID for DNS management |
-| `cloudflare-account-id` | Cloudflare account ID |
-| `cloudflare-api-token` | Cloudflare API token for DNS and tunnel management |
-| `cloudflare-team-domain` | Cloudflare Zero Trust team domain |
-| `authorized-as` | Authorized identity/email for SSO access policies |
-| `twingate-api-token` | Twingate API token with Read, Write & Provision permissions |
-| `twingate-network` | Twingate network name (e.g. `mynetwork` from `mynetwork.twingate.com`) |
-| `github-token` | GitHub personal access token with `repo` scope |
+| Secret Name | Description | Where to retrieve the value |
+|---|---|---|
+| `hcloud-token` | Hetzner Cloud API token with read & write permissions | [Hetzner Cloud Console → your project → Security → API tokens](https://console.hetzner.cloud/projects) |
+| `dns-zone` | DNS zone domain used by all applications | [Cloudflare dashboard → your zone → Overview](https://dash.cloudflare.com/) |
+| `letsencrypt-email` | Email address for Let's Encrypt certificate registration | Your own contact mailbox |
+| `cloudflare-zone-id` | Cloudflare zone ID for DNS management | [Cloudflare dashboard → your zone → Overview → API section (right sidebar)](https://dash.cloudflare.com/) |
+| `cloudflare-account-id` | Cloudflare account ID | [Cloudflare dashboard → your zone → Overview → API section (right sidebar)](https://dash.cloudflare.com/) |
+| `cloudflare-api-token` | Cloudflare API token for DNS and tunnel management | [Cloudflare dashboard → My Profile → API Tokens → Create Token](https://dash.cloudflare.com/profile/api-tokens) |
+| `cloudflare-team-domain` | Cloudflare Zero Trust team domain | [Cloudflare Zero Trust dashboard → Settings → Custom Pages](https://one.dash.cloudflare.com/) |
+| `authorized-as` | Authorized identity/email for SSO access policies | [Microsoft Entra admin center → Users](https://entra.microsoft.com/#view/Microsoft_AAD_UsersAndTenants/UserManagementMenuBlade/~/AllUsers) |
+| `twingate-api-token` | Twingate API token with Read, Write & Provision permissions | Twingate Admin → Settings → API (`https://<network>.twingate.com/settings/account/api`); see the [API guide](https://docs.twingate.com/docs/api-overview) |
+| `twingate-network` | Twingate network name (e.g. `mynetwork` from `mynetwork.twingate.com`) | URL prefix shown when signed in to your [Twingate admin console](https://www.twingate.com/) |
+| `github-token` | GitHub personal access token with `repo` scope | [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens) |
 
 Terraform will write back the following Key Vault secrets after a successful
 apply: `host`, `ssh-user-name`, `ssh-port`, `ssh-private-key`, `user-password`,
