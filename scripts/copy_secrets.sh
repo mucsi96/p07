@@ -12,8 +12,6 @@ SECRETS=(
   "cloudflare-api-token"
   "cloudflare-team-domain"
   "authorized-as"
-  "twingate-api-token"
-  "twingate-network"
   "github-token"
 )
 

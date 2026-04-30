@@ -39,9 +39,3 @@ resource "azurerm_key_vault_secret" "tenant_id" {
   name         = "tenant-id"
   value        = data.azurerm_client_config.current.tenant_id
 }
-
-resource "azurerm_key_vault_secret" "twingate_service_key" {
-  key_vault_id = data.azurerm_key_vault.kv.id
-  name         = "twingate-service-key"
-  value        = module.setup_twingate.service_key
-}
