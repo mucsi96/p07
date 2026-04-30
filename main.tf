@@ -176,10 +176,10 @@ provider "github" {
 }
 
 module "provision_hetzner_server" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/provision_hetzner_server?ref=v-2"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/provision_hetzner_server?ref=v-4"
 
   server_name = var.environment_name
-  server_type = "cx42"
+  server_type = "cx43"
   location    = var.hetzner_location
 
   labels = {
@@ -188,7 +188,7 @@ module "provision_hetzner_server" {
 }
 
 module "setup_cluster" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_cluster?ref=v-2"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_cluster?ref=v-4"
 
   host                  = module.provision_hetzner_server.ipv4_address
   initial_port          = module.provision_hetzner_server.ssh_port
@@ -198,11 +198,12 @@ module "setup_cluster" {
   environment_name      = var.environment_name
   azure_subscription_id = var.azure_subscription_id
   storage_account_name  = var.storage_account_name
-  azure_tenant_id       = data.azurerm_client_config.current.tenant_id
+  azure_tenant_id          = data.azurerm_client_config.current.tenant_id
+  local_python_interpreter = abspath("${path.root}/.venv/bin/python3")
 }
 
 module "setup_ingress_controller" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_ingress_controller?ref=v-2"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_ingress_controller?ref=v-4"
 
   environment_name       = var.environment_name
   subscription_id        = var.azure_subscription_id
@@ -219,7 +220,7 @@ module "setup_ingress_controller" {
 }
 
 module "setup_twingate" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_twingate?ref=v-2"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_twingate?ref=v-4"
 
   environment_name   = var.environment_name
   twingate_network   = data.azurerm_key_vault_secret.twingate_network.value

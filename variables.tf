@@ -3,3 +3,4 @@ variable "hetzner_location" {
   type        = string
   default     = "fsn1"
 }
+
