@@ -2,12 +2,9 @@
 
 set -e  # Exit immediately if a command exits with a non-zero status
 
-resourceGroupName="$1"
+resourceGroupName=p07
 
-if [ -z "$resourceGroupName" ]; then
-  echo "Usage: $0 <resource-group-name>"
-  exit 1
-fi
+source .venv/bin/activate
 
 ansible-playbook --inventory localhost, --extra-vars "resource_group_name=$resourceGroupName" scripts/init.yaml
 

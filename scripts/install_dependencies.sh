@@ -58,6 +58,17 @@ if [ "$(uname -s)" = "Linux" ] && [ -f /etc/os-release ]; then
     fi
 fi
 
+source .venv/bin/activate
+
+python3 -m pip install -r requirements.txt
+
+ansible-galaxy collection install -r requirements.yml
+
+python3 -m pip install -r ~/.ansible/collections/ansible_collections/azure/azcollection/requirements.txt
+
+# Add the Helm repository
+helm repo add mucsi96 https://mucsi96.github.io/k8s-helm-charts
+
 # Check if backend.tf exists
 if [ ! -f backend.tf ]; then
     echo "Fetching backend configuration from Key Vault..."
@@ -74,14 +85,3 @@ else
     echo "Backend configuration already exists."
     terraform init
 fi
-
-# Add the Helm repository
-helm repo add mucsi96 https://mucsi96.github.io/k8s-helm-charts
-
-source .venv/bin/activate
-
-python3 -m pip install -r requirements.txt
-
-ansible-galaxy collection install -r requirements.yml
-
-python3 -m pip install -r ~/.ansible/collections/ansible_collections/azure/azcollection/requirements.txt

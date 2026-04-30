@@ -1,5 +1,5 @@
 collections:
   - name: azure.azcollection
-    version: 3.11.0 # https://github.com/ansible-collections/azure/releases
+    version: 3.17.0 # https://github.com/ansible-collections/azure/releases
   - name: community.crypto
     version: 3.0.4 # https://github.com/ansible-collections/community.crypto/releases
