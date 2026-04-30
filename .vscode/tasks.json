@@ -44,6 +44,17 @@
     },
     {
       "type": "shell",
+      "command": "bash",
+      "label": "Start DB proxy",
+      "args": ["scripts/start_db_proxy.sh"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [],
+      "isBackground": true
+    },
+    {
+      "type": "shell",
       "command": "az",
       "label": "Login to Azure",
       "args": ["login"],
