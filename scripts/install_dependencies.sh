@@ -42,6 +42,14 @@ if [ "$(uname -s)" = "Linux" ] && [ -f /etc/os-release ]; then
             echo "NodeJS is already installed."
         fi
 
+        # Check and install redis-cli
+        if ! command -v redis-cli &> /dev/null; then
+            echo "Installing redis-tools..."
+            sudo apt-get update && sudo apt-get install -y redis-tools
+        else
+            echo "redis-cli is already installed."
+        fi
+
         # Check and install azwi
         if ! command -v azwi &> /dev/null; then
             echo "Installing azwi..."
