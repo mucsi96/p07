@@ -87,11 +87,6 @@ data "azurerm_key_vault_secret" "dns_zone" {
   name         = "dns-zone"
 }
 
-data "azurerm_key_vault_secret" "letsencrypt_email" {
-  key_vault_id = data.azurerm_key_vault.kv.id
-  name         = "letsencrypt-email"
-}
-
 data "azurerm_key_vault_secret" "cloudflare_zone_id" {
   key_vault_id = data.azurerm_key_vault.kv.id
   name         = "cloudflare-zone-id"
@@ -107,11 +102,6 @@ data "azurerm_key_vault_secret" "cloudflare_api_token" {
   name         = "cloudflare-api-token"
 }
 
-data "azurerm_key_vault_secret" "cloudflare_team_domain" {
-  key_vault_id = data.azurerm_key_vault.kv.id
-  name         = "cloudflare-team-domain"
-}
-
 data "azurerm_key_vault_secret" "authorized_as" {
   key_vault_id = data.azurerm_key_vault.kv.id
   name         = "authorized-as"
@@ -120,6 +110,11 @@ data "azurerm_key_vault_secret" "authorized_as" {
 data "azurerm_key_vault_secret" "github_token" {
   key_vault_id = data.azurerm_key_vault.kv.id
   name         = "github-token"
+}
+
+data "azurerm_key_vault_secret" "letsencrypt_email" {
+  key_vault_id = data.azurerm_key_vault.kv.id
+  name         = "letsencrypt-email"
 }
 
 provider "hcloud" {
@@ -156,7 +151,7 @@ provider "github" {
 }
 
 module "provision_hetzner_server" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/provision_hetzner_server?ref=v-6"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/provision_hetzner_server?ref=ddf99d0"
 
   server_name = var.environment_name
   server_type = "cx43"
@@ -168,7 +163,7 @@ module "provision_hetzner_server" {
 }
 
 module "setup_cluster" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_cluster?ref=v-6"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_cluster?ref=ddf99d0"
 
   host                  = module.provision_hetzner_server.ipv4_address
   initial_port          = module.provision_hetzner_server.ssh_port
@@ -180,27 +175,82 @@ module "setup_cluster" {
   storage_account_name  = var.storage_account_name
   azure_tenant_id          = data.azurerm_client_config.current.tenant_id
   local_python_interpreter = abspath("${path.root}/.venv/bin/python3")
+
+  apiserver_oidc = {
+    issuer_url = "https://login.microsoftonline.com/${data.azurerm_client_config.current.tenant_id}/v2.0"
+    client_id  = module.register_headlamp_dashboard.client_id
+  }
+}
+
+locals {
+  k8s_dashboard_hostname = "dashboard.${data.azurerm_key_vault_secret.dns_zone.value}"
+}
+
+module "register_headlamp_dashboard" {
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_webapp?ref=ddf99d0"
+
+  display_name  = "Headlamp - ${var.environment_name}"
+  owner         = local.owner
+  redirect_uris = ["https://${local.k8s_dashboard_hostname}/oauth2/callback"]
 }
 
 module "setup_ingress_controller" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_ingress_controller?ref=v-6"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_ingress_controller?ref=ddf99d0"
 
-  environment_name       = var.environment_name
-  subscription_id        = var.azure_subscription_id
-  dns_zone               = data.azurerm_key_vault_secret.dns_zone.value
-  traefik_chart_version  = "39.0.8"  # https://github.com/traefik/traefik-helm-chart/releases
-  traefik_version        = "v3.6.14" # https://github.com/traefik/traefik/releases
-  letsencrypt_email      = data.azurerm_key_vault_secret.letsencrypt_email.value
-  cloudflare_api_token   = data.azurerm_key_vault_secret.cloudflare_api_token.value
-  cloudflare_account_id  = data.azurerm_key_vault_secret.cloudflare_account_id.value
-  cloudflare_zone_id     = data.azurerm_key_vault_secret.cloudflare_zone_id.value
-  cloudflare_team_domain = data.azurerm_key_vault_secret.cloudflare_team_domain.value
-  authorized_as          = data.azurerm_key_vault_secret.authorized_as.value
-  depends_on             = [module.setup_cluster]
+  environment_name           = var.environment_name
+  subscription_id            = var.azure_subscription_id
+  dns_zone                   = data.azurerm_key_vault_secret.dns_zone.value
+  traefik_chart_version      = "39.0.8"  #https://github.com/traefik/traefik-helm-chart/releases
+  traefik_version            = "v3.6.14" #https://github.com/traefik/traefik/releases
+  cloudflare_api_token       = data.azurerm_key_vault_secret.cloudflare_api_token.value
+  cloudflare_account_id      = data.azurerm_key_vault_secret.cloudflare_account_id.value
+  cloudflare_zone_id         = data.azurerm_key_vault_secret.cloudflare_zone_id.value
+  authorized_as              = data.azurerm_key_vault_secret.authorized_as.value
+  tenant_id                  = data.azurerm_client_config.current.tenant_id
+  owner                      = local.owner
+  oauth2_proxy_chart_version = "7.12.6"  #https://github.com/oauth2-proxy/manifests/releases
+  oauth2_proxy_image_version = "v7.12.0" #https://github.com/oauth2-proxy/oauth2-proxy/releases
+  valid_email                = data.azurerm_key_vault_secret.letsencrypt_email.value
+  depends_on                 = [module.setup_cluster]
+}
+
+module "create_redis_namespace" {
+  source           = "git::https://github.com/mucsi96/k8s-modules.git//modules/create_app_namespace?ref=ddf99d0"
+  environment_name = var.environment_name
+  k8s_namespace    = "redis"
+
+  k8s_host                   = module.setup_cluster.k8s_host
+  k8s_cluster_ca_certificate = module.setup_cluster.k8s_cluster_ca_certificate
+  wait_for                   = module.setup_ingress_controller.traefik_ready
+}
+
+module "create_redis" {
+  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_redis?ref=ddf99d0"
+  k8s_name      = "headlamp-session"
+  k8s_namespace = module.create_redis_namespace.k8s_namespace
+}
+
+module "setup_k8s_dashboard" {
+  source                     = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_k8s_dashboard?ref=ddf99d0"
+
+  hostname                   = local.k8s_dashboard_hostname
+  tenant_id                  = data.azurerm_client_config.current.tenant_id
+  client_id                  = module.register_headlamp_dashboard.client_id
+  client_secret              = module.register_headlamp_dashboard.client_secret
+  valid_email                = data.azurerm_key_vault_secret.letsencrypt_email.value
+  headlamp_chart_version     = "0.41.0"  #https://github.com/headlamp-k8s/headlamp/releases
+  headlamp_image_version     = "v0.41.0" #https://github.com/headlamp-k8s/headlamp/releases
+  oauth2_proxy_chart_version = "7.12.6"  #https://github.com/oauth2-proxy/manifests/releases
+  oauth2_proxy_image_version = "v7.12.0" #https://github.com/oauth2-proxy/oauth2-proxy/releases
+  session_redis = {
+    connection_url = module.create_redis.connection_url
+    password       = module.create_redis.password
+  }
+  wait_for = module.setup_ingress_controller.traefik_ready
 }
 
 module "create_database_namespace" {
-  source           = "git::https://github.com/mucsi96/k8s-modules.git//modules/create_app_namespace?ref=v-6"
+  source           = "git::https://github.com/mucsi96/k8s-modules.git//modules/create_app_namespace?ref=ddf99d0"
   environment_name = var.environment_name
   k8s_namespace    = "db"
 
@@ -210,7 +260,7 @@ module "create_database_namespace" {
 }
 
 module "create_database" {
-  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/create_postgres_database?ref=v-6"
+  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/create_postgres_database?ref=ddf99d0"
   k8s_name      = "postgres1"
   k8s_namespace = module.create_database_namespace.k8s_namespace
   db_name       = "postgres1"
@@ -221,7 +271,7 @@ locals {
 }
 
 module "setup_backup_app" {
-  source                     = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_backup_app?ref=v-6"
+  source                     = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_backup_app?ref=ddf99d0"
   environment_name           = var.environment_name
   azure_location             = var.azure_location
   owner                      = local.owner
@@ -239,7 +289,7 @@ module "setup_backup_app" {
 }
 
 module "setup_learn_language_app" {
-  source                     = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_learn_language_app?ref=v-6"
+  source                     = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_learn_language_app?ref=ddf99d0"
   environment_name           = var.environment_name
   azure_location             = var.azure_location
   owner                      = local.owner
@@ -255,7 +305,7 @@ module "setup_learn_language_app" {
 }
 
 module "setup_hello_app" {
-  source                     = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_hello_app?ref=v-6"
+  source                     = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_hello_app?ref=ddf99d0"
   environment_name           = var.environment_name
   azure_location             = var.azure_location
   owner                      = local.owner
@@ -271,7 +321,7 @@ module "setup_hello_app" {
 }
 
 module "setup_training_log_app" {
-  source                     = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_training_log_app?ref=v-6"
+  source                     = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_training_log_app?ref=ddf99d0"
   environment_name           = var.environment_name
   azure_location             = var.azure_location
   owner                      = local.owner
