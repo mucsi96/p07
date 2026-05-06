@@ -1,0 +1,49 @@
+name: Update Terraform Versions
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Every Wednesday at 8:00 AM UTC
+    - cron: '0 8 * * 3'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  update-versions:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude to update Terraform versions
+        id: claude-update
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            Your task is to update hardcoded versions in `main.tf` to the latest available versions and open a pull request with the changes.
+
+            Steps:
+            1. Read `main.tf` and identify every hardcoded version string that has an inline comment containing a URL (e.g. `# https://github.com/<owner>/<repo>/releases`). The comment URL is the source of truth for where to look up the latest version.
+            2. For each such version, fetch the latest stable (non-prerelease, non-draft) release from the URL in the comment using the GitHub API. Use `gh release list` / `gh release view` against the repository derived from the URL, or `curl` against `https://api.github.com/repos/<owner>/<repo>/releases/latest`.
+            3. Preserve the existing version prefix style (e.g. if the current value starts with `v`, keep the `v`; if it's a bare semver like `39.0.8`, keep it bare). Do not change formatting, alignment, or comments.
+            4. If the current version already matches the latest, skip it. If no versions need updating, exit without creating a pull request and post a short summary instead.
+            5. Create a new branch named `claude/update-terraform-versions-<run-id>` from the default branch, commit the changes to `main.tf` with a clear message, push the branch, and open a pull request titled "chore: update Terraform versions to latest" describing each version bump as a bullet list (`<key>: <old> -> <new>` with the source URL).
+
+            Constraints:
+            - Only edit `main.tf`. Do not modify other files.
+            - Only update versions that have an inline source URL comment.
+            - Do not change `version = ">= ..."` constraint operators - only update versions that are pinned to a specific value.
+            - If a release tag is something like `traefik-helm-chart-v39.0.8`, extract just the semver portion (`39.0.8`) to match the existing format.
+
+          claude_args: '--allowed-tools "Bash(gh release list:*),Bash(gh release view:*),Bash(gh api:*),Bash(curl:*),Bash(git checkout:*),Bash(git switch:*),Bash(git add:*),Bash(git commit:*),Bash(git push:*),Bash(git diff:*),Bash(git status:*),Bash(git config:*),Bash(gh pr create:*),Bash(gh pr list:*),Bash(gh pr view:*),Edit,Read,Grep,Glob"'
