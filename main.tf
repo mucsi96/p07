@@ -216,16 +216,16 @@ module "setup_ingress_controller" {
   environment_name           = var.environment_name
   subscription_id            = var.azure_subscription_id
   dns_zone                   = data.azurerm_key_vault_secret.dns_zone.value
-  traefik_chart_version      = "39.0.8"  #https://github.com/traefik/traefik-helm-chart/releases
-  traefik_version            = "v3.6.14" #https://github.com/traefik/traefik/releases
+  traefik_chart_version      = "40.0.0"  #https://github.com/traefik/traefik-helm-chart/releases
+  traefik_version            = "v3.7.0"  #https://github.com/traefik/traefik/releases
   cloudflare_api_token       = data.azurerm_key_vault_secret.cloudflare_api_token.value
   cloudflare_account_id      = data.azurerm_key_vault_secret.cloudflare_account_id.value
   cloudflare_zone_id         = data.azurerm_key_vault_secret.cloudflare_zone_id.value
   authorized_as              = data.azurerm_key_vault_secret.authorized_as.value
   tenant_id                  = data.azurerm_client_config.current.tenant_id
   owner                      = local.owner
-  oauth2_proxy_chart_version = "7.12.6"  #https://github.com/oauth2-proxy/manifests/releases
-  oauth2_proxy_image_version = "v7.12.0" #https://github.com/oauth2-proxy/oauth2-proxy/releases
+  oauth2_proxy_chart_version = "10.4.3"  #https://github.com/oauth2-proxy/manifests/releases
+  oauth2_proxy_image_version = "v7.15.2" #https://github.com/oauth2-proxy/oauth2-proxy/releases
   valid_email                = data.azurerm_key_vault_secret.letsencrypt_email.value
   session_redis = {
     connection_url = module.create_redis.connection_url
@@ -235,8 +235,8 @@ module "setup_ingress_controller" {
 
 module "setup_metrics_server" {
   source                       = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_metrics_server?ref=v-22"
-  metrics_server_chart_version = "3.12.2" #https://github.com/kubernetes-sigs/metrics-server/releases
-  metrics_server_image_version = "v0.7.2" #https://github.com/kubernetes-sigs/metrics-server/releases
+  metrics_server_chart_version = "3.13.0" #https://github.com/kubernetes-sigs/metrics-server/releases
+  metrics_server_image_version = "v0.8.1" #https://github.com/kubernetes-sigs/metrics-server/releases
   wait_for                     = module.setup_ingress_controller.traefik_ready
 }
 
@@ -250,8 +250,8 @@ module "setup_k8s_dashboard" {
   valid_email                = data.azurerm_key_vault_secret.letsencrypt_email.value
   headlamp_chart_version     = "0.41.0"  #https://github.com/headlamp-k8s/headlamp/releases
   headlamp_image_version     = "v0.41.0" #https://github.com/headlamp-k8s/headlamp/releases
-  oauth2_proxy_chart_version = "7.12.6"  #https://github.com/oauth2-proxy/manifests/releases
-  oauth2_proxy_image_version = "v7.12.0" #https://github.com/oauth2-proxy/oauth2-proxy/releases
+  oauth2_proxy_chart_version = "10.4.3"  #https://github.com/oauth2-proxy/manifests/releases
+  oauth2_proxy_image_version = "v7.15.2" #https://github.com/oauth2-proxy/oauth2-proxy/releases
   session_redis = {
     connection_url = module.create_redis.connection_url
     password       = module.create_redis.password
