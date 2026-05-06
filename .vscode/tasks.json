@@ -78,6 +78,16 @@
         "panel": "dedicated",
         "clear": true
       }
+    },
+    {
+      "type": "shell",
+      "command": "bash",
+      "label": "List Terraform warnings",
+      "args": ["scripts/plan_warnings.sh"],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": []
     }
   ]
 }
