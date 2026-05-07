@@ -119,6 +119,14 @@ data "azurerm_key_vault_secret" "letsencrypt_email" {
 
 locals {
   k8s_dashboard_hostname = "dashboard.${data.azurerm_key_vault_secret.dns_zone.value}"
+  grafana_hostname       = "grafana.${data.azurerm_key_vault_secret.dns_zone.value}"
+  prometheus_hostname    = "prometheus.${data.azurerm_key_vault_secret.dns_zone.value}"
+
+  module_source_base = "git::https://github.com/mucsi96/k8s-modules.git//modules"
+  module_source_ref  = "v-25"
+
+  oauth2_proxy_chart_version = "10.4.3"  #https://github.com/oauth2-proxy/manifests/releases
+  oauth2_proxy_image_version = "v7.15.2" #https://github.com/oauth2-proxy/oauth2-proxy/releases
 }
 
 provider "hcloud" {
@@ -155,7 +163,7 @@ provider "github" {
 }
 
 module "provision_hetzner_server" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/provision_hetzner_server?ref=v-22"
+  source = "${local.module_source_base}/provision_hetzner_server?ref=${local.module_source_ref}"
 
   server_name = var.environment_name
   server_type = "cx43"
@@ -167,7 +175,7 @@ module "provision_hetzner_server" {
 }
 
 module "register_cluster_apiserver_oidc_app" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_webapp?ref=v-22"
+  source = "${local.module_source_base}/register_webapp?ref=${local.module_source_ref}"
 
   display_name  = "Headlamp - ${var.environment_name}"
   owner         = local.owner
@@ -175,7 +183,7 @@ module "register_cluster_apiserver_oidc_app" {
 }
 
 module "setup_cluster" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_cluster?ref=v-22"
+  source = "${local.module_source_base}/setup_cluster?ref=${local.module_source_ref}"
 
   host                  = module.provision_hetzner_server.ipv4_address
   initial_port          = module.provision_hetzner_server.ssh_port
@@ -195,7 +203,7 @@ module "setup_cluster" {
 }
 
 module "create_redis_namespace" {
-  source           = "git::https://github.com/mucsi96/k8s-modules.git//modules/create_app_namespace?ref=v-22"
+  source           = "${local.module_source_base}/create_app_namespace?ref=${local.module_source_ref}"
   environment_name = var.environment_name
   k8s_namespace    = "redis"
 
@@ -205,13 +213,13 @@ module "create_redis_namespace" {
 }
 
 module "create_redis" {
-  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_redis?ref=v-22"
+  source        = "${local.module_source_base}/setup_redis?ref=${local.module_source_ref}"
   k8s_name      = "redis"
   k8s_namespace = module.create_redis_namespace.k8s_namespace
 }
 
 module "setup_ingress_controller" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_ingress_controller?ref=v-22"
+  source = "${local.module_source_base}/setup_ingress_controller?ref=${local.module_source_ref}"
 
   environment_name           = var.environment_name
   subscription_id            = var.azure_subscription_id
@@ -224,8 +232,8 @@ module "setup_ingress_controller" {
   authorized_as              = data.azurerm_key_vault_secret.authorized_as.value
   tenant_id                  = data.azurerm_client_config.current.tenant_id
   owner                      = local.owner
-  oauth2_proxy_chart_version = "10.4.3"  #https://github.com/oauth2-proxy/manifests/releases
-  oauth2_proxy_image_version = "v7.15.2" #https://github.com/oauth2-proxy/oauth2-proxy/releases
+  oauth2_proxy_chart_version = local.oauth2_proxy_chart_version
+  oauth2_proxy_image_version = local.oauth2_proxy_image_version
   valid_email                = data.azurerm_key_vault_secret.letsencrypt_email.value
   session_redis = {
     connection_url = module.create_redis.connection_url
@@ -234,14 +242,14 @@ module "setup_ingress_controller" {
 }
 
 module "setup_metrics_server" {
-  source                       = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_metrics_server?ref=v-22"
+  source                       = "${local.module_source_base}/setup_metrics_server?ref=${local.module_source_ref}"
   metrics_server_chart_version = "3.13.0" #https://github.com/kubernetes-sigs/metrics-server/releases
   metrics_server_image_version = "v0.8.1" #https://github.com/kubernetes-sigs/metrics-server/releases
   wait_for                     = module.setup_ingress_controller.traefik_ready
 }
 
 module "setup_k8s_dashboard" {
-  source                     = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_k8s_dashboard?ref=v-22"
+  source                     = "${local.module_source_base}/setup_k8s_dashboard?ref=${local.module_source_ref}"
 
   hostname                   = local.k8s_dashboard_hostname
   tenant_id                  = data.azurerm_client_config.current.tenant_id
@@ -250,8 +258,8 @@ module "setup_k8s_dashboard" {
   valid_email                = data.azurerm_key_vault_secret.letsencrypt_email.value
   headlamp_chart_version     = "0.41.0"  #https://github.com/headlamp-k8s/headlamp/releases
   headlamp_image_version     = "v0.41.0" #https://github.com/headlamp-k8s/headlamp/releases
-  oauth2_proxy_chart_version = "10.4.3"  #https://github.com/oauth2-proxy/manifests/releases
-  oauth2_proxy_image_version = "v7.15.2" #https://github.com/oauth2-proxy/oauth2-proxy/releases
+  oauth2_proxy_chart_version = local.oauth2_proxy_chart_version
+  oauth2_proxy_image_version = local.oauth2_proxy_image_version
   session_redis = {
     connection_url = module.create_redis.connection_url
     password       = module.create_redis.password
@@ -260,7 +268,7 @@ module "setup_k8s_dashboard" {
 }
 
 module "create_database_namespace" {
-  source           = "git::https://github.com/mucsi96/k8s-modules.git//modules/create_app_namespace?ref=v-22"
+  source           = "${local.module_source_base}/create_app_namespace?ref=${local.module_source_ref}"
   environment_name = var.environment_name
   k8s_namespace    = "db"
 
@@ -270,7 +278,7 @@ module "create_database_namespace" {
 }
 
 module "create_database" {
-  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/create_postgres_database?ref=v-22"
+  source        = "${local.module_source_base}/create_postgres_database?ref=${local.module_source_ref}"
   k8s_name      = "postgres1"
   k8s_namespace = module.create_database_namespace.k8s_namespace
   db_name       = "postgres1"
@@ -280,8 +288,52 @@ locals {
   owner = data.azurerm_client_config.current.object_id
 }
 
+module "register_grafana_dashboard" {
+  source = "${local.module_source_base}/register_webapp?ref=${local.module_source_ref}"
+
+  display_name  = "Grafana - ${var.environment_name}"
+  owner         = local.owner
+  redirect_uris = ["https://${local.grafana_hostname}/oauth2/callback"]
+}
+
+module "register_prometheus_dashboard" {
+  source = "${local.module_source_base}/register_webapp?ref=${local.module_source_ref}"
+
+  display_name  = "Prometheus - ${var.environment_name}"
+  owner         = local.owner
+  redirect_uris = ["https://${local.prometheus_hostname}/oauth2/callback"]
+}
+
+module "setup_prometheus_operator" {
+  source                              = "${local.module_source_base}/setup_prometheus_operator?ref=${local.module_source_ref}"
+
+  grafana_hostname                    = local.grafana_hostname
+  prometheus_hostname                 = local.prometheus_hostname
+  tenant_id                           = data.azurerm_client_config.current.tenant_id
+  grafana_client_id                   = module.register_grafana_dashboard.client_id
+  grafana_client_secret               = module.register_grafana_dashboard.client_secret
+  prometheus_client_id                = module.register_prometheus_dashboard.client_id
+  prometheus_client_secret            = module.register_prometheus_dashboard.client_secret
+  valid_email                         = data.azurerm_key_vault_secret.letsencrypt_email.value
+  kube_prometheus_stack_chart_version = "84.5.0"  #https://github.com/prometheus-community/helm-charts/releases?q=kube-prometheus-stack
+  oauth2_proxy_chart_version          = local.oauth2_proxy_chart_version
+  oauth2_proxy_image_version          = local.oauth2_proxy_image_version
+  session_redis = {
+    connection_url = module.create_redis.connection_url
+    password       = module.create_redis.password
+  }
+  database = {
+    host           = module.create_database.host
+    port           = module.create_database.port
+    name           = module.create_database.name
+    admin_username = module.create_database.username
+    admin_password = module.create_database.password
+  }
+  wait_for = module.setup_ingress_controller.traefik_ready
+}
+
 module "setup_backup_app" {
-  source                     = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_backup_app?ref=v-22"
+  source                     = "${local.module_source_base}/setup_backup_app?ref=${local.module_source_ref}"
   environment_name           = var.environment_name
   azure_location             = var.azure_location
   owner                      = local.owner
@@ -300,7 +352,7 @@ module "setup_backup_app" {
 }
 
 module "setup_learn_language_app" {
-  source                     = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_learn_language_app?ref=v-22"
+  source                     = "${local.module_source_base}/setup_learn_language_app?ref=${local.module_source_ref}"
   environment_name           = var.environment_name
   azure_location             = var.azure_location
   owner                      = local.owner
@@ -317,7 +369,7 @@ module "setup_learn_language_app" {
 }
 
 module "setup_hello_app" {
-  source                     = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_hello_app?ref=v-22"
+  source                     = "${local.module_source_base}/setup_hello_app?ref=${local.module_source_ref}"
   environment_name           = var.environment_name
   azure_location             = var.azure_location
   owner                      = local.owner
@@ -334,7 +386,7 @@ module "setup_hello_app" {
 }
 
 module "setup_training_log_app" {
-  source                     = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_training_log_app?ref=v-22"
+  source                     = "${local.module_source_base}/setup_training_log_app?ref=${local.module_source_ref}"
   environment_name           = var.environment_name
   azure_location             = var.azure_location
   owner                      = local.owner
