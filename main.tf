@@ -121,9 +121,10 @@ locals {
   k8s_dashboard_hostname = "dashboard.${data.azurerm_key_vault_secret.dns_zone.value}"
   grafana_hostname       = "grafana.${data.azurerm_key_vault_secret.dns_zone.value}"
   prometheus_hostname    = "prometheus.${data.azurerm_key_vault_secret.dns_zone.value}"
+  pgweb_hostname       = "db.${data.azurerm_key_vault_secret.dns_zone.value}"
 
   module_source_base = "git::https://github.com/mucsi96/k8s-modules.git//modules"
-  module_source_ref  = "v-25"
+  module_source_ref  = "v-29"
 
   oauth2_proxy_chart_version = "10.4.3"  #https://github.com/oauth2-proxy/manifests/releases
   oauth2_proxy_image_version = "v7.15.2" #https://github.com/oauth2-proxy/oauth2-proxy/releases
@@ -286,6 +287,13 @@ module "create_database" {
 
 locals {
   owner = data.azurerm_client_config.current.object_id
+  db = {
+    host     = module.create_database.host
+    port     = module.create_database.port
+    database = module.create_database.name
+    username = module.create_database.username
+    password = module.create_database.password
+  }
 }
 
 module "register_grafana_dashboard" {
@@ -332,6 +340,48 @@ module "setup_prometheus_operator" {
   wait_for = module.setup_ingress_controller.traefik_ready
 }
 
+module "setup_loki" {
+  source              = "${local.module_source_base}/setup_loki?ref=${local.module_source_ref}"
+
+  loki_chart_version  = "7.0.0" #https://github.com/grafana/loki/blob/main/production/helm/loki/Chart.yaml
+  alloy_chart_version = "1.8.1" #https://github.com/grafana/helm-charts/releases?q=alloy
+  grafana_namespace   = module.setup_prometheus_operator.namespace
+  wait_for            = module.setup_prometheus_operator.kube_prometheus_stack_ready
+}
+
+module "register_pgweb_dashboard" {
+  source = "${local.module_source_base}/register_webapp?ref=${local.module_source_ref}"
+
+  display_name  = "pgweb - ${var.environment_name}"
+  owner         = local.owner
+  redirect_uris = ["https://${local.pgweb_hostname}/oauth2/callback"]
+}
+
+module "setup_pgweb" {
+  source                     = "${local.module_source_base}/setup_pgweb?ref=${local.module_source_ref}"
+
+  hostname                   = local.pgweb_hostname
+  tenant_id                  = data.azurerm_client_config.current.tenant_id
+  client_id                  = module.register_pgweb_dashboard.client_id
+  client_secret              = module.register_pgweb_dashboard.client_secret
+  valid_email                = data.azurerm_key_vault_secret.letsencrypt_email.value
+  pgweb_image_version        = "0.16.2"  #https://github.com/sosedoff/pgweb/releases
+  oauth2_proxy_chart_version = "7.12.6"  #https://github.com/oauth2-proxy/manifests/releases
+  oauth2_proxy_image_version = "v7.12.0" #https://github.com/oauth2-proxy/oauth2-proxy/releases
+  session_redis = {
+    connection_url = module.create_redis.connection_url
+    password       = module.create_redis.password
+  }
+  database = {
+    name     = module.create_database.name
+    host     = module.create_database.host
+    port     = module.create_database.port
+    username = module.create_database.username
+    password = module.create_database.password
+  }
+  wait_for = module.setup_ingress_controller.traefik_ready
+}
+
 module "setup_backup_app" {
   source                     = "${local.module_source_base}/setup_backup_app?ref=${local.module_source_ref}"
   environment_name           = var.environment_name
@@ -343,12 +393,41 @@ module "setup_backup_app" {
   hostname                   = data.azurerm_key_vault_secret.dns_zone.value
   azure_subscription_id      = var.azure_subscription_id
   tenant_id                  = data.azurerm_client_config.current.tenant_id
-  db_username                = module.create_database.username
-  db_password                = module.create_database.password
   wait_for                   = module.setup_ingress_controller.traefik_ready
 
   azure_storage_account_resource_group_name = "ibari"
   azure_storage_account_name                = "ibari"
+
+  dbs_config = [
+    merge(local.db, {
+      name            = "Learn language"
+      schema          = "learn_language"
+      createPlainDump = true
+      folderBackups = [
+        {
+          path = "/app/storage/learn-language"
+        }
+      ]
+      excludeTables = [
+        "study_sessions",
+        "study_session_cards",
+        "model_usage_logs",
+        "api_tokens"
+      ]
+    }),
+    merge(local.db, {
+      name            = "Training log"
+      schema          = "training_log"
+      createPlainDump = true
+      excludeTables = [
+        "oauth2_authorized_client"
+      ]
+    }),
+    merge(local.db, {
+      name            = "Grafana"
+      schema          = "grafana"
+    })
+  ]
 }
 
 module "setup_learn_language_app" {
