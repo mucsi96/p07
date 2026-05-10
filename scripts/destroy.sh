@@ -4,6 +4,6 @@ set -euo pipefail
 
 source .venv/bin/activate
 
-terraform destroy -target=module.setup_ingress_controller
+terraform destroy -refresh=false -auto-approve -target=module.provision_hetzner_server
 
-# terraform destroy
+# terraform destroy -refresh=false -auto-approve

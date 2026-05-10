@@ -54,6 +54,11 @@ terraform {
       source  = "hashicorp/random"
       version = ">= 3.6.0"
     }
+
+    kubectl = {
+      source  = "gavinbunney/kubectl"
+      version = ">= 1.14.0"
+    }
   }
 
   required_version = ">= 1.2"
@@ -124,7 +129,7 @@ locals {
   pgweb_hostname       = "db.${data.azurerm_key_vault_secret.dns_zone.value}"
 
   module_source_base = "git::https://github.com/mucsi96/k8s-modules.git//modules"
-  module_source_ref  = "v-29"
+  module_source_ref  = "v-30"
 
   oauth2_proxy_chart_version = "10.4.3"  #https://github.com/oauth2-proxy/manifests/releases
   oauth2_proxy_image_version = "v7.15.2" #https://github.com/oauth2-proxy/oauth2-proxy/releases
@@ -150,6 +155,18 @@ provider "helm" {
   }
 }
 
+# Used in place of hashicorp/kubernetes's kubernetes_manifest for CRDs (Traefik
+# IngressRoute / Middleware). kubernetes_manifest opens a REST client at plan
+# time and breaks the from-scratch apply because the cluster does not exist
+# yet; kubectl_manifest defers the connection to apply time.
+provider "kubectl" {
+  host                   = module.setup_cluster.k8s_host
+  client_certificate     = module.setup_cluster.k8s_client_certificate
+  client_key             = module.setup_cluster.k8s_client_key
+  cluster_ca_certificate = module.setup_cluster.k8s_cluster_ca_certificate
+  load_config_file       = false
+}
+
 provider "acme" {
   server_url = "https://acme-v02.api.letsencrypt.org/directory"
 }
@@ -167,8 +184,10 @@ module "provision_hetzner_server" {
   source = "${local.module_source_base}/provision_hetzner_server?ref=${local.module_source_ref}"
 
   server_name = var.environment_name
-  server_type = "cx43"
-  location    = var.hetzner_location
+  server_type = "cx33"
+  location    = "fsn1"
+  image       = "ubuntu-24.04"
+  username    = "ubuntu"
 
   labels = {
     environment = var.environment_name
@@ -187,15 +206,15 @@ module "setup_cluster" {
   source = "${local.module_source_base}/setup_cluster?ref=${local.module_source_ref}"
 
   host                  = module.provision_hetzner_server.ipv4_address
-  initial_port          = module.provision_hetzner_server.ssh_port
+  ssh_port              = module.provision_hetzner_server.ssh_port
   username              = module.provision_hetzner_server.username
-  initial_password      = module.provision_hetzner_server.initial_password
   azure_key_vault_name  = data.azurerm_key_vault.kv.name
   environment_name      = var.environment_name
   azure_subscription_id = var.azure_subscription_id
   storage_account_name  = var.storage_account_name
   azure_tenant_id          = data.azurerm_client_config.current.tenant_id
   local_python_interpreter = abspath("${path.root}/.venv/bin/python3")
+  wait_for                 = module.provision_hetzner_server.ssh_ready
 
   apiserver_oidc = {
     issuer_url = "https://login.microsoftonline.com/${data.azurerm_client_config.current.tenant_id}/v2.0"

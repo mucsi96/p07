@@ -37,21 +37,22 @@ if [ -z "$ssh_user" ]; then
   exit 1
 fi
 
-ssh_key_path=${SSH_IDENTITY_PATH:-".kube/${ssh_host}-id_ed25519"}
-
-if [ ! -f "$ssh_key_path" ]; then
-  mkdir -p "$(dirname "$ssh_key_path")"
-  get_secret "$SSH_PRIVATE_KEY_SECRET" > "$ssh_key_path"
-fi
-
-chmod 600 "$ssh_key_path"
-
 ssh_port=$(get_secret "$SSH_PORT_SECRET")
 
 if [ -z "$ssh_port" ]; then
   echo "Unable to retrieve SSH port from Key Vault." >&2
   exit 1
 fi
+
+ssh_key_path=${SSH_IDENTITY_PATH:-}
+
+if [ -z "$ssh_key_path" ]; then
+  ssh_key_path=$(mktemp)
+  trap 'rm -f "$ssh_key_path"' EXIT
+  get_secret "$SSH_PRIVATE_KEY_SECRET" > "$ssh_key_path"
+fi
+
+chmod 600 "$ssh_key_path"
 
 ssh \
   -i "$ssh_key_path" \

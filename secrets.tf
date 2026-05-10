@@ -13,19 +13,13 @@ resource "azurerm_key_vault_secret" "ssh_user_name" {
 resource "azurerm_key_vault_secret" "ssh_private_key" {
   key_vault_id = data.azurerm_key_vault.kv.id
   name         = "ssh-private-key"
-  value        = module.setup_cluster.ssh_private_key
+  value        = module.provision_hetzner_server.ssh_private_key
 }
 
 resource "azurerm_key_vault_secret" "ssh_port" {
   key_vault_id = data.azurerm_key_vault.kv.id
   name         = "ssh-port"
-  value        = module.setup_cluster.ssh_port
-}
-
-resource "azurerm_key_vault_secret" "user_password" {
-  key_vault_id = data.azurerm_key_vault.kv.id
-  name         = "user-password"
-  value        = module.setup_cluster.user_password
+  value        = module.provision_hetzner_server.ssh_port
 }
 
 resource "azurerm_key_vault_secret" "issuer" {
