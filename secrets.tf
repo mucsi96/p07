@@ -33,3 +33,9 @@ resource "azurerm_key_vault_secret" "tenant_id" {
   name         = "tenant-id"
   value        = data.azurerm_client_config.current.tenant_id
 }
+
+resource "azurerm_key_vault_secret" "k8s_oidc_config" {
+  key_vault_id = data.azurerm_key_vault.kv.id
+  name         = "k8s-oidc-config"
+  value        = module.setup_cluster.k8s_oidc_config
+}

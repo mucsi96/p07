@@ -129,7 +129,7 @@ locals {
   pgweb_hostname       = "db.${data.azurerm_key_vault_secret.dns_zone.value}"
 
   module_source_base = "git::https://github.com/mucsi96/k8s-modules.git//modules"
-  module_source_ref  = "v-30"
+  module_source_ref  = "v-31"
 
   oauth2_proxy_chart_version = "10.4.3"  #https://github.com/oauth2-proxy/manifests/releases
   oauth2_proxy_image_version = "v7.15.2" #https://github.com/oauth2-proxy/oauth2-proxy/releases
@@ -194,32 +194,21 @@ module "provision_hetzner_server" {
   }
 }
 
-module "register_cluster_apiserver_oidc_app" {
-  source = "${local.module_source_base}/register_webapp?ref=${local.module_source_ref}"
-
-  display_name  = "Headlamp - ${var.environment_name}"
-  owner         = local.owner
-  redirect_uris = ["https://${local.k8s_dashboard_hostname}/oauth2/callback"]
-}
-
 module "setup_cluster" {
   source = "${local.module_source_base}/setup_cluster?ref=${local.module_source_ref}"
 
-  host                  = module.provision_hetzner_server.ipv4_address
-  ssh_port              = module.provision_hetzner_server.ssh_port
-  username              = module.provision_hetzner_server.username
-  azure_key_vault_name  = data.azurerm_key_vault.kv.name
-  environment_name      = var.environment_name
-  azure_subscription_id = var.azure_subscription_id
-  storage_account_name  = var.storage_account_name
-  azure_tenant_id          = data.azurerm_client_config.current.tenant_id
+  host                          = module.provision_hetzner_server.ipv4_address
+  ssh_port                      = module.provision_hetzner_server.ssh_port
+  username                      = module.provision_hetzner_server.username
+  azure_key_vault_name          = data.azurerm_key_vault.kv.name
+  environment_name              = var.environment_name
+  azure_subscription_id         = var.azure_subscription_id
+  storage_account_name          = var.storage_account_name
+  azure_tenant_id               = data.azurerm_client_config.current.tenant_id
+  owner                         = local.owner
+  cluster_monitor_redirect_uris = ["https://${local.k8s_dashboard_hostname}/oauth2/callback"]
   local_python_interpreter = abspath("${path.root}/.venv/bin/python3")
-  wait_for                 = module.provision_hetzner_server.ssh_ready
-
-  apiserver_oidc = {
-    issuer_url = "https://login.microsoftonline.com/${data.azurerm_client_config.current.tenant_id}/v2.0"
-    client_id  = module.register_cluster_apiserver_oidc_app.client_id
-  }
+  wait_for                      = module.provision_hetzner_server.ssh_ready
 }
 
 module "create_redis_namespace" {
@@ -273,8 +262,8 @@ module "setup_k8s_dashboard" {
 
   hostname                   = local.k8s_dashboard_hostname
   tenant_id                  = data.azurerm_client_config.current.tenant_id
-  client_id                  = module.register_cluster_apiserver_oidc_app.client_id
-  client_secret              = module.register_cluster_apiserver_oidc_app.client_secret
+  client_id                  = module.setup_cluster.cluster_monitor_client_id
+  client_secret              = module.setup_cluster.cluster_monitor_client_secret
   valid_email                = data.azurerm_key_vault_secret.letsencrypt_email.value
   headlamp_chart_version     = "0.41.0"  #https://github.com/headlamp-k8s/headlamp/releases
   headlamp_image_version     = "v0.41.0" #https://github.com/headlamp-k8s/headlamp/releases
@@ -412,6 +401,7 @@ module "setup_backup_app" {
   hostname                   = data.azurerm_key_vault_secret.dns_zone.value
   azure_subscription_id      = var.azure_subscription_id
   tenant_id                  = data.azurerm_client_config.current.tenant_id
+  k8s_oidc_config            = module.setup_cluster.k8s_oidc_config
   wait_for                   = module.setup_ingress_controller.traefik_ready
 
   azure_storage_account_resource_group_name = "ibari"
@@ -460,6 +450,7 @@ module "setup_learn_language_app" {
   hostname                   = data.azurerm_key_vault_secret.dns_zone.value
   azure_subscription_id      = var.azure_subscription_id
   tenant_id                  = data.azurerm_client_config.current.tenant_id
+  k8s_oidc_config            = module.setup_cluster.k8s_oidc_config
   db_jdbc_url                = module.create_database.jdbc_url
   db_username                = module.create_database.username
   db_password                = module.create_database.password
@@ -475,8 +466,9 @@ module "setup_hello_app" {
   k8s_cluster_ca_certificate = module.setup_cluster.k8s_cluster_ca_certificate
   k8s_oidc_issuer_url        = module.setup_cluster.oidc_issuer_url
   hostname                   = data.azurerm_key_vault_secret.dns_zone.value
-  tenant_id                  = data.azurerm_client_config.current.tenant_id
   azure_subscription_id      = var.azure_subscription_id
+  tenant_id                  = data.azurerm_client_config.current.tenant_id
+  k8s_oidc_config            = module.setup_cluster.k8s_oidc_config
   db_jdbc_url                = module.create_database.jdbc_url
   db_username                = module.create_database.username
   db_password                = module.create_database.password
@@ -494,6 +486,7 @@ module "setup_training_log_app" {
   hostname                   = data.azurerm_key_vault_secret.dns_zone.value
   azure_subscription_id      = var.azure_subscription_id
   tenant_id                  = data.azurerm_client_config.current.tenant_id
+  k8s_oidc_config            = module.setup_cluster.k8s_oidc_config
   db_jdbc_url                = module.create_database.jdbc_url
   db_username                = module.create_database.username
   db_password                = module.create_database.password

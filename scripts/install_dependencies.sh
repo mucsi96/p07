@@ -63,6 +63,21 @@ if [ "$(uname -s)" = "Linux" ] && [ -f /etc/os-release ]; then
             echo "azwi is already installed."
         fi
 
+        # Check and install kubelogin (used by .kube/oidc-config exec block to
+        # mint Entra ID tokens for kube-apiserver; works for both `az login`
+        # users and GitHub workload-identity pipelines).
+        if ! command -v kubelogin &> /dev/null; then
+            echo "Installing kubelogin..."
+            tmp_dir=$(mktemp -d)
+            kubelogin_version=$(curl -s https://api.github.com/repos/Azure/kubelogin/releases/latest | grep -m1 '"tag_name":' | cut -d'"' -f4 || true)
+            curl -sL "https://github.com/Azure/kubelogin/releases/download/${kubelogin_version}/kubelogin-linux-amd64.zip" -o "$tmp_dir/kubelogin.zip"
+            unzip -q "$tmp_dir/kubelogin.zip" -d "$tmp_dir"
+            sudo install -m 0755 "$tmp_dir/bin/linux_amd64/kubelogin" /usr/local/bin/kubelogin
+            rm -rf "$tmp_dir"
+        else
+            echo "kubelogin is already installed."
+        fi
+
     fi
 fi
 
