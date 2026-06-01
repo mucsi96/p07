@@ -38,6 +38,6 @@ if [ -n "$vault_name" ] && command -v az >/dev/null 2>&1; then
   fi
 fi
 
-terraform plan -refresh=false -out=tfplan
+terraform plan -out=tfplan
 # terraform plan -refresh-only -out=tfplan
 terraform apply -auto-approve tfplan

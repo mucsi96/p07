@@ -126,10 +126,14 @@ locals {
   k8s_dashboard_hostname = "dashboard.${data.azurerm_key_vault_secret.dns_zone.value}"
   grafana_hostname       = "grafana.${data.azurerm_key_vault_secret.dns_zone.value}"
   prometheus_hostname    = "prometheus.${data.azurerm_key_vault_secret.dns_zone.value}"
-  pgweb_hostname       = "db.${data.azurerm_key_vault_secret.dns_zone.value}"
+  pgweb_hostname         = "db.${data.azurerm_key_vault_secret.dns_zone.value}"
+  faro_hostname          = "faro.${data.azurerm_key_vault_secret.dns_zone.value}"
+  # /collect is the path the Faro Web SDK POSTs telemetry to. Stored verbatim
+  # in each app's Key Vault so the SPA can use it without further URL juggling.
+  client_log_url = "https://${local.faro_hostname}/collect"
 
   module_source_base = "git::https://github.com/mucsi96/k8s-modules.git//modules"
-  module_source_ref  = "v-31"
+  module_source_ref  = "v-32"
 
   oauth2_proxy_chart_version = "10.4.3"  #https://github.com/oauth2-proxy/manifests/releases
   oauth2_proxy_image_version = "v7.15.2" #https://github.com/oauth2-proxy/oauth2-proxy/releases
@@ -354,7 +358,14 @@ module "setup_loki" {
   loki_chart_version  = "7.0.0" #https://github.com/grafana/loki/blob/main/production/helm/loki/Chart.yaml
   alloy_chart_version = "1.8.1" #https://github.com/grafana/helm-charts/releases?q=alloy
   grafana_namespace   = module.setup_prometheus_operator.namespace
-  wait_for            = module.setup_prometheus_operator.kube_prometheus_stack_ready
+  faro_hostname       = local.faro_hostname
+  faro_cors_allowed_origins = [
+    "https://hello.${data.azurerm_key_vault_secret.dns_zone.value}",
+    "https://language.${data.azurerm_key_vault_secret.dns_zone.value}",
+    "https://training.${data.azurerm_key_vault_secret.dns_zone.value}",
+    "https://backup.${data.azurerm_key_vault_secret.dns_zone.value}",
+  ]
+  wait_for = module.setup_prometheus_operator.kube_prometheus_stack_ready
 }
 
 module "register_pgweb_dashboard" {
@@ -402,6 +413,7 @@ module "setup_backup_app" {
   azure_subscription_id      = var.azure_subscription_id
   tenant_id                  = data.azurerm_client_config.current.tenant_id
   k8s_oidc_config            = module.setup_cluster.k8s_oidc_config
+  client_log_url             = local.client_log_url
   wait_for                   = module.setup_ingress_controller.traefik_ready
 
   azure_storage_account_resource_group_name = "ibari"
@@ -451,6 +463,7 @@ module "setup_learn_language_app" {
   azure_subscription_id      = var.azure_subscription_id
   tenant_id                  = data.azurerm_client_config.current.tenant_id
   k8s_oidc_config            = module.setup_cluster.k8s_oidc_config
+  client_log_url             = local.client_log_url
   db_jdbc_url                = module.create_database.jdbc_url
   db_username                = module.create_database.username
   db_password                = module.create_database.password
@@ -469,6 +482,7 @@ module "setup_hello_app" {
   azure_subscription_id      = var.azure_subscription_id
   tenant_id                  = data.azurerm_client_config.current.tenant_id
   k8s_oidc_config            = module.setup_cluster.k8s_oidc_config
+  client_log_url             = local.client_log_url
   db_jdbc_url                = module.create_database.jdbc_url
   db_username                = module.create_database.username
   db_password                = module.create_database.password
@@ -487,6 +501,7 @@ module "setup_training_log_app" {
   azure_subscription_id      = var.azure_subscription_id
   tenant_id                  = data.azurerm_client_config.current.tenant_id
   k8s_oidc_config            = module.setup_cluster.k8s_oidc_config
+  client_log_url             = local.client_log_url
   db_jdbc_url                = module.create_database.jdbc_url
   db_username                = module.create_database.username
   db_password                = module.create_database.password
