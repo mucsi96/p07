@@ -135,7 +135,7 @@ locals {
   module_source_base = "git::https://github.com/mucsi96/k8s-modules.git//modules"
   module_source_ref  = "v-32"
 
-  oauth2_proxy_chart_version = "10.4.3"  #https://github.com/oauth2-proxy/manifests/releases
+  oauth2_proxy_chart_version = "10.6.0"  #https://github.com/oauth2-proxy/manifests/releases
   oauth2_proxy_image_version = "v7.15.2" #https://github.com/oauth2-proxy/oauth2-proxy/releases
 }
 
@@ -237,8 +237,8 @@ module "setup_ingress_controller" {
   environment_name           = var.environment_name
   subscription_id            = var.azure_subscription_id
   dns_zone                   = data.azurerm_key_vault_secret.dns_zone.value
-  traefik_chart_version      = "40.0.0"  #https://github.com/traefik/traefik-helm-chart/releases
-  traefik_version            = "v3.7.0"  #https://github.com/traefik/traefik/releases
+  traefik_chart_version      = "40.2.0"  #https://github.com/traefik/traefik-helm-chart/releases
+  traefik_version            = "v3.7.1"  #https://github.com/traefik/traefik/releases
   cloudflare_api_token       = data.azurerm_key_vault_secret.cloudflare_api_token.value
   cloudflare_account_id      = data.azurerm_key_vault_secret.cloudflare_account_id.value
   cloudflare_zone_id         = data.azurerm_key_vault_secret.cloudflare_zone_id.value
@@ -256,7 +256,7 @@ module "setup_ingress_controller" {
 
 module "setup_metrics_server" {
   source                       = "${local.module_source_base}/setup_metrics_server?ref=${local.module_source_ref}"
-  metrics_server_chart_version = "3.13.0" #https://github.com/kubernetes-sigs/metrics-server/releases
+  metrics_server_chart_version = "3.13.1" #https://github.com/kubernetes-sigs/metrics-server/releases
   metrics_server_image_version = "v0.8.1" #https://github.com/kubernetes-sigs/metrics-server/releases
   wait_for                     = module.setup_ingress_controller.traefik_ready
 }
@@ -269,8 +269,8 @@ module "setup_k8s_dashboard" {
   client_id                  = module.setup_cluster.cluster_monitor_client_id
   client_secret              = module.setup_cluster.cluster_monitor_client_secret
   valid_email                = data.azurerm_key_vault_secret.letsencrypt_email.value
-  headlamp_chart_version     = "0.41.0"  #https://github.com/headlamp-k8s/headlamp/releases
-  headlamp_image_version     = "v0.41.0" #https://github.com/headlamp-k8s/headlamp/releases
+  headlamp_chart_version     = "0.42.0"  #https://github.com/headlamp-k8s/headlamp/releases
+  headlamp_image_version     = "v0.42.0" #https://github.com/headlamp-k8s/headlamp/releases
   oauth2_proxy_chart_version = local.oauth2_proxy_chart_version
   oauth2_proxy_image_version = local.oauth2_proxy_image_version
   session_redis = {
@@ -335,7 +335,7 @@ module "setup_prometheus_operator" {
   prometheus_client_id                = module.register_prometheus_dashboard.client_id
   prometheus_client_secret            = module.register_prometheus_dashboard.client_secret
   valid_email                         = data.azurerm_key_vault_secret.letsencrypt_email.value
-  kube_prometheus_stack_chart_version = "84.5.0"  #https://github.com/prometheus-community/helm-charts/releases?q=kube-prometheus-stack
+  kube_prometheus_stack_chart_version = "86.1.0"  #https://github.com/prometheus-community/helm-charts/releases?q=kube-prometheus-stack
   oauth2_proxy_chart_version          = local.oauth2_proxy_chart_version
   oauth2_proxy_image_version          = local.oauth2_proxy_image_version
   session_redis = {
@@ -355,8 +355,8 @@ module "setup_prometheus_operator" {
 module "setup_loki" {
   source              = "${local.module_source_base}/setup_loki?ref=${local.module_source_ref}"
 
-  loki_chart_version  = "7.0.0" #https://github.com/grafana/loki/blob/main/production/helm/loki/Chart.yaml
-  alloy_chart_version = "1.8.1" #https://github.com/grafana/helm-charts/releases?q=alloy
+  loki_chart_version  = "7.1.0" #https://github.com/grafana/loki/blob/main/production/helm/loki/Chart.yaml
+  alloy_chart_version = "1.8.2" #https://github.com/grafana/helm-charts/releases?q=alloy
   grafana_namespace   = module.setup_prometheus_operator.namespace
   faro_hostname       = local.faro_hostname
   faro_cors_allowed_origins = [
@@ -384,7 +384,7 @@ module "setup_pgweb" {
   client_id                  = module.register_pgweb_dashboard.client_id
   client_secret              = module.register_pgweb_dashboard.client_secret
   valid_email                = data.azurerm_key_vault_secret.letsencrypt_email.value
-  pgweb_image_version        = "0.16.2"  #https://github.com/sosedoff/pgweb/releases
+  pgweb_image_version        = "0.17.0"  #https://github.com/sosedoff/pgweb/releases
   oauth2_proxy_chart_version = local.oauth2_proxy_chart_version
   oauth2_proxy_image_version = local.oauth2_proxy_image_version
   session_redis = {
