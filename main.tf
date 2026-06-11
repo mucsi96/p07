@@ -97,11 +97,6 @@ data "azurerm_key_vault_secret" "cloudflare_zone_id" {
   name         = "cloudflare-zone-id"
 }
 
-data "azurerm_key_vault_secret" "cloudflare_account_id" {
-  key_vault_id = data.azurerm_key_vault.kv.id
-  name         = "cloudflare-account-id"
-}
-
 data "azurerm_key_vault_secret" "cloudflare_api_token" {
   key_vault_id = data.azurerm_key_vault.kv.id
   name         = "cloudflare-api-token"
@@ -133,7 +128,7 @@ locals {
   client_log_url = "https://${local.faro_hostname}/collect"
 
   module_source_base = "git::https://github.com/mucsi96/k8s-modules.git//modules"
-  module_source_ref  = "v-32"
+  module_source_ref  = "v-33"
 
   oauth2_proxy_chart_version = "10.4.3"  #https://github.com/oauth2-proxy/manifests/releases
   oauth2_proxy_image_version = "v7.15.2" #https://github.com/oauth2-proxy/oauth2-proxy/releases
@@ -184,14 +179,17 @@ provider "github" {
   token = data.azurerm_key_vault_secret.github_token.value
 }
 
+data "cloudflare_ip_ranges" "cloudflare" {}
+
 module "provision_hetzner_server" {
   source = "${local.module_source_base}/provision_hetzner_server?ref=${local.module_source_ref}"
 
-  server_name = var.environment_name
-  server_type = "cx33"
-  location    = "fsn1"
-  image       = "ubuntu-24.04"
-  username    = "ubuntu"
+  server_name      = var.environment_name
+  server_type      = "cx33"
+  location         = "fsn1"
+  image            = "ubuntu-24.04"
+  username         = "ubuntu"
+  https_source_ips = concat(data.cloudflare_ip_ranges.cloudflare.ipv4_cidrs, data.cloudflare_ip_ranges.cloudflare.ipv6_cidrs)
 
   labels = {
     environment = var.environment_name
@@ -211,7 +209,7 @@ module "setup_cluster" {
   azure_tenant_id               = data.azurerm_client_config.current.tenant_id
   owner                         = local.owner
   cluster_monitor_redirect_uris = ["https://${local.k8s_dashboard_hostname}/oauth2/callback"]
-  local_python_interpreter = abspath("${path.root}/.venv/bin/python3")
+  local_python_interpreter      = abspath("${path.root}/.venv/bin/python3")
   wait_for                      = module.provision_hetzner_server.ssh_ready
 }
 
@@ -237,11 +235,12 @@ module "setup_ingress_controller" {
   environment_name           = var.environment_name
   subscription_id            = var.azure_subscription_id
   dns_zone                   = data.azurerm_key_vault_secret.dns_zone.value
-  traefik_chart_version      = "40.0.0"  #https://github.com/traefik/traefik-helm-chart/releases
-  traefik_version            = "v3.7.0"  #https://github.com/traefik/traefik/releases
-  cloudflare_api_token       = data.azurerm_key_vault_secret.cloudflare_api_token.value
-  cloudflare_account_id      = data.azurerm_key_vault_secret.cloudflare_account_id.value
+  traefik_chart_version      = "40.0.0" #https://github.com/traefik/traefik-helm-chart/releases
+  traefik_version            = "v3.7.0" #https://github.com/traefik/traefik/releases
   cloudflare_zone_id         = data.azurerm_key_vault_secret.cloudflare_zone_id.value
+  origin_ipv4                = module.provision_hetzner_server.ipv4_address
+  cloudflare_ipv4_cidrs      = data.cloudflare_ip_ranges.cloudflare.ipv4_cidrs
+  cloudflare_ipv6_cidrs      = data.cloudflare_ip_ranges.cloudflare.ipv6_cidrs
   authorized_as              = data.azurerm_key_vault_secret.authorized_as.value
   tenant_id                  = data.azurerm_client_config.current.tenant_id
   owner                      = local.owner
@@ -262,7 +261,7 @@ module "setup_metrics_server" {
 }
 
 module "setup_k8s_dashboard" {
-  source                     = "${local.module_source_base}/setup_k8s_dashboard?ref=${local.module_source_ref}"
+  source = "${local.module_source_base}/setup_k8s_dashboard?ref=${local.module_source_ref}"
 
   hostname                   = local.k8s_dashboard_hostname
   tenant_id                  = data.azurerm_client_config.current.tenant_id
@@ -325,7 +324,7 @@ module "register_prometheus_dashboard" {
 }
 
 module "setup_prometheus_operator" {
-  source                              = "${local.module_source_base}/setup_prometheus_operator?ref=${local.module_source_ref}"
+  source = "${local.module_source_base}/setup_prometheus_operator?ref=${local.module_source_ref}"
 
   grafana_hostname                    = local.grafana_hostname
   prometheus_hostname                 = local.prometheus_hostname
@@ -335,7 +334,7 @@ module "setup_prometheus_operator" {
   prometheus_client_id                = module.register_prometheus_dashboard.client_id
   prometheus_client_secret            = module.register_prometheus_dashboard.client_secret
   valid_email                         = data.azurerm_key_vault_secret.letsencrypt_email.value
-  kube_prometheus_stack_chart_version = "84.5.0"  #https://github.com/prometheus-community/helm-charts/releases?q=kube-prometheus-stack
+  kube_prometheus_stack_chart_version = "84.5.0" #https://github.com/prometheus-community/helm-charts/releases?q=kube-prometheus-stack
   oauth2_proxy_chart_version          = local.oauth2_proxy_chart_version
   oauth2_proxy_image_version          = local.oauth2_proxy_image_version
   session_redis = {
@@ -353,7 +352,7 @@ module "setup_prometheus_operator" {
 }
 
 module "setup_loki" {
-  source              = "${local.module_source_base}/setup_loki?ref=${local.module_source_ref}"
+  source = "${local.module_source_base}/setup_loki?ref=${local.module_source_ref}"
 
   loki_chart_version  = "7.0.0" #https://github.com/grafana/loki/blob/main/production/helm/loki/Chart.yaml
   alloy_chart_version = "1.8.1" #https://github.com/grafana/helm-charts/releases?q=alloy
@@ -377,14 +376,14 @@ module "register_pgweb_dashboard" {
 }
 
 module "setup_pgweb" {
-  source                     = "${local.module_source_base}/setup_pgweb?ref=${local.module_source_ref}"
+  source = "${local.module_source_base}/setup_pgweb?ref=${local.module_source_ref}"
 
   hostname                   = local.pgweb_hostname
   tenant_id                  = data.azurerm_client_config.current.tenant_id
   client_id                  = module.register_pgweb_dashboard.client_id
   client_secret              = module.register_pgweb_dashboard.client_secret
   valid_email                = data.azurerm_key_vault_secret.letsencrypt_email.value
-  pgweb_image_version        = "0.16.2"  #https://github.com/sosedoff/pgweb/releases
+  pgweb_image_version        = "0.16.2" #https://github.com/sosedoff/pgweb/releases
   oauth2_proxy_chart_version = local.oauth2_proxy_chart_version
   oauth2_proxy_image_version = local.oauth2_proxy_image_version
   session_redis = {
@@ -445,8 +444,8 @@ module "setup_backup_app" {
       ]
     }),
     merge(local.db, {
-      name            = "Grafana"
-      schema          = "grafana"
+      name   = "Grafana"
+      schema = "grafana"
     })
   ]
 }

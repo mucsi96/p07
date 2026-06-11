@@ -55,9 +55,6 @@ Populate the following secrets in the `p07` Key Vault before running
 | `dns-zone` | DNS zone domain used by all applications | [Cloudflare dashboard → your zone → Overview](https://dash.cloudflare.com/) |
 | `letsencrypt-email` | Email address for Let's Encrypt certificate registration | Your own contact mailbox |
 | `cloudflare-zone-id` | Cloudflare zone ID for DNS management | [Cloudflare dashboard → your zone → Overview → API section (right sidebar)](https://dash.cloudflare.com/) |
-| `cloudflare-account-id` | Cloudflare account ID | [Cloudflare dashboard → your zone → Overview → API section (right sidebar)](https://dash.cloudflare.com/) |
-| `cloudflare-api-token` | Cloudflare API token for DNS and tunnel management | [Cloudflare dashboard → My Profile → API Tokens → Create Token](https://dash.cloudflare.com/profile/api-tokens) |
-| `cloudflare-team-domain` | Cloudflare Zero Trust team domain | [Cloudflare Zero Trust dashboard → Settings → Custom Pages](https://one.dash.cloudflare.com/) |
 | `authorized-as` | Authorized identity/email for SSO access policies | [Microsoft Entra admin center → Users](https://entra.microsoft.com/#view/Microsoft_AAD_UsersAndTenants/UserManagementMenuBlade/~/AllUsers) |
 | `github-token` | GitHub personal access token with `repo` scope | [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens) |
 
