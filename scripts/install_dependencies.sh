@@ -63,6 +63,16 @@ if [ "$(uname -s)" = "Linux" ] && [ -f /etc/os-release ]; then
             echo "azwi is already installed."
         fi
 
+        # Check and install Twingate client (runs inside WSL so Terraform
+        # and the tunnel share the same network namespace; requires
+        # systemd — [boot] systemd=true in /etc/wsl.conf).
+        if ! command -v twingate &> /dev/null; then
+            echo "Installing Twingate client..."
+            curl -s https://binaries.twingate.com/client/linux/install.sh | sudo bash
+        else
+            echo "Twingate client is already installed."
+        fi
+
         # Check and install kubelogin (used by .kube/oidc-config exec block to
         # mint Entra ID tokens for kube-apiserver; works for both `az login`
         # users and GitHub workload-identity pipelines).

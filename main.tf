@@ -40,6 +40,11 @@ terraform {
       version = "5.19.1"
     }
 
+    twingate = {
+      source  = "Twingate/twingate"
+      version = "4.2.1"
+    }
+
     github = {
       source  = "integrations/github"
       version = ">= 6.0.0"
@@ -117,6 +122,16 @@ data "azurerm_key_vault_secret" "letsencrypt_email" {
   name         = "letsencrypt-email"
 }
 
+data "azurerm_key_vault_secret" "twingate_network" {
+  key_vault_id = data.azurerm_key_vault.kv.id
+  name         = "twingate-network"
+}
+
+data "azurerm_key_vault_secret" "twingate_api_token" {
+  key_vault_id = data.azurerm_key_vault.kv.id
+  name         = "twingate-api-token"
+}
+
 locals {
   k8s_dashboard_hostname = "dashboard.${data.azurerm_key_vault_secret.dns_zone.value}"
   grafana_hostname       = "grafana.${data.azurerm_key_vault_secret.dns_zone.value}"
@@ -128,7 +143,7 @@ locals {
   client_log_url = "https://${local.faro_hostname}/collect"
 
   module_source_base = "git::https://github.com/mucsi96/k8s-modules.git//modules"
-  module_source_ref  = "v-34"
+  module_source_ref  = "27a444c"
 
   oauth2_proxy_chart_version = "10.4.3"  #https://github.com/oauth2-proxy/manifests/releases
   oauth2_proxy_image_version = "v7.15.2" #https://github.com/oauth2-proxy/oauth2-proxy/releases
@@ -174,6 +189,11 @@ provider "cloudflare" {
   api_token = data.azurerm_key_vault_secret.cloudflare_api_token.value
 }
 
+provider "twingate" {
+  api_token = data.azurerm_key_vault_secret.twingate_api_token.value
+  network   = data.azurerm_key_vault_secret.twingate_network.value
+}
+
 provider "github" {
   owner = "mucsi96"
   token = data.azurerm_key_vault_secret.github_token.value
@@ -181,15 +201,37 @@ provider "github" {
 
 data "cloudflare_ip_ranges" "cloudflare" {}
 
+# Created before the server: its connector tokens are baked into the server's
+# cloud-init user_data. No depends_on — must NOT order after setup_cluster.
+module "setup_twingate_connector" {
+  source           = "${local.module_source_base}/setup_twingate_connector?ref=${local.module_source_ref}"
+  environment_name = var.environment_name
+}
+
+# Needs the server's address/port, so it orders after provision_hetzner_server
+# via field references. No depends_on (would cycle with ssh_ready_wait_for).
+module "setup_twingate_access" {
+  source            = "${local.module_source_base}/setup_twingate_access?ref=${local.module_source_ref}"
+  environment_name  = var.environment_name
+  remote_network_id = module.setup_twingate_connector.remote_network_id
+  k8s_host          = module.provision_hetzner_server.ipv4_address
+  ssh_address       = module.provision_hetzner_server.ipv4_address
+  ssh_port          = module.provision_hetzner_server.ssh_port
+}
+
 module "provision_hetzner_server" {
   source = "${local.module_source_base}/provision_hetzner_server?ref=${local.module_source_ref}"
 
-  server_name      = var.environment_name
-  server_type      = "cx33"
-  location         = "fsn1"
-  image            = "ubuntu-24.04"
-  username         = "ubuntu"
-  https_source_ips = concat(data.cloudflare_ip_ranges.cloudflare.ipv4_cidrs, data.cloudflare_ip_ranges.cloudflare.ipv6_cidrs)
+  server_name            = var.environment_name
+  server_type            = "cpx32"
+  location               = "nbg1"
+  image                  = "ubuntu-26.04"
+  username               = "ubuntu"
+  https_source_ips       = concat(data.cloudflare_ip_ranges.cloudflare.ipv4_cidrs, data.cloudflare_ip_ranges.cloudflare.ipv6_cidrs)
+  twingate_network       = data.azurerm_key_vault_secret.twingate_network.value
+  twingate_access_token  = module.setup_twingate_connector.access_token
+  twingate_refresh_token = module.setup_twingate_connector.refresh_token
+  ssh_ready_wait_for     = module.setup_twingate_access.ssh_resource_id
 
   labels = {
     environment = var.environment_name
@@ -289,11 +331,20 @@ module "create_database_namespace" {
   wait_for                   = module.setup_ingress_controller.traefik_ready
 }
 
+module "setup_prometheus_operator_crds" {
+  source = "${local.module_source_base}/setup_prometheus_operator_crds?ref=${local.module_source_ref}"
+
+  prometheus_operator_crds_chart_version = "28.0.1" #https://github.com/prometheus-community/helm-charts/releases?q=prometheus-operator-crds
+  wait_for                               = module.setup_ingress_controller.traefik_ready
+}
+
 module "create_database" {
   source        = "${local.module_source_base}/create_postgres_database?ref=${local.module_source_ref}"
   k8s_name      = "postgres1"
   k8s_namespace = module.create_database_namespace.k8s_namespace
   db_name       = "postgres1"
+
+  wait_for = module.setup_prometheus_operator_crds.crds_ready
 }
 
 locals {
@@ -413,6 +464,7 @@ module "setup_backup_app" {
   tenant_id                  = data.azurerm_client_config.current.tenant_id
   k8s_oidc_config            = module.setup_cluster.k8s_oidc_config
   client_log_url             = local.client_log_url
+  twingate_service_key       = module.setup_twingate_access.service_key
   wait_for                   = module.setup_ingress_controller.traefik_ready
 
   azure_storage_account_resource_group_name = "ibari"
@@ -466,6 +518,7 @@ module "setup_learn_language_app" {
   db_jdbc_url                = module.create_database.jdbc_url
   db_username                = module.create_database.username
   db_password                = module.create_database.password
+  twingate_service_key       = module.setup_twingate_access.service_key
   wait_for                   = module.setup_ingress_controller.traefik_ready
 }
 
@@ -485,6 +538,7 @@ module "setup_hello_app" {
   db_jdbc_url                = module.create_database.jdbc_url
   db_username                = module.create_database.username
   db_password                = module.create_database.password
+  twingate_service_key       = module.setup_twingate_access.service_key
   wait_for                   = module.setup_ingress_controller.traefik_ready
 }
 
@@ -504,5 +558,6 @@ module "setup_training_log_app" {
   db_jdbc_url                = module.create_database.jdbc_url
   db_username                = module.create_database.username
   db_password                = module.create_database.password
+  twingate_service_key       = module.setup_twingate_access.service_key
   wait_for                   = module.setup_ingress_controller.traefik_ready
 }
