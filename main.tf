@@ -136,14 +136,14 @@ locals {
   k8s_dashboard_hostname = "dashboard.${data.azurerm_key_vault_secret.dns_zone.value}"
   grafana_hostname       = "grafana.${data.azurerm_key_vault_secret.dns_zone.value}"
   prometheus_hostname    = "prometheus.${data.azurerm_key_vault_secret.dns_zone.value}"
-  pgweb_hostname         = "db.${data.azurerm_key_vault_secret.dns_zone.value}"
+  cloudbeaver_hostname   = "db.${data.azurerm_key_vault_secret.dns_zone.value}"
   faro_hostname          = "faro.${data.azurerm_key_vault_secret.dns_zone.value}"
   # /collect is the path the Faro Web SDK POSTs telemetry to. Stored verbatim
   # in each app's Key Vault so the SPA can use it without further URL juggling.
   client_log_url = "https://${local.faro_hostname}/collect"
 
   module_source_base = "git::https://github.com/mucsi96/k8s-modules.git//modules"
-  module_source_ref  = "v-39"
+  module_source_ref  = "v-41"
 
   oauth2_proxy_chart_version = "10.4.3"  #https://github.com/oauth2-proxy/manifests/releases
   oauth2_proxy_image_version = "v7.15.2" #https://github.com/oauth2-proxy/oauth2-proxy/releases
@@ -418,23 +418,23 @@ module "setup_loki" {
   wait_for = module.setup_prometheus_operator.kube_prometheus_stack_ready
 }
 
-module "register_pgweb_dashboard" {
+module "register_cloudbeaver" {
   source = "${local.module_source_base}/register_webapp?ref=${local.module_source_ref}"
 
-  display_name  = "pgweb - ${var.environment_name}"
+  display_name  = "cloudbeaver - ${var.environment_name}"
   owner         = local.owner
-  redirect_uris = ["https://${local.pgweb_hostname}/oauth2/callback"]
+  redirect_uris = ["https://${local.cloudbeaver_hostname}/oauth2/callback"]
 }
 
-module "setup_pgweb" {
-  source = "${local.module_source_base}/setup_pgweb?ref=${local.module_source_ref}"
+module "setup_cloudbeaver" {
+  source = "${local.module_source_base}/setup_cloudbeaver?ref=${local.module_source_ref}"
 
-  hostname                   = local.pgweb_hostname
+  hostname                   = local.cloudbeaver_hostname
   tenant_id                  = data.azurerm_client_config.current.tenant_id
-  client_id                  = module.register_pgweb_dashboard.client_id
-  client_secret              = module.register_pgweb_dashboard.client_secret
+  client_id                  = module.register_cloudbeaver.client_id
+  client_secret              = module.register_cloudbeaver.client_secret
   valid_email                = data.azurerm_key_vault_secret.letsencrypt_email.value
-  pgweb_image_version        = "0.16.2" #https://github.com/sosedoff/pgweb/releases
+  cloudbeaver_image_version  = "26.1.0"  #https://github.com/dbeaver/cloudbeaver/releases
   oauth2_proxy_chart_version = local.oauth2_proxy_chart_version
   oauth2_proxy_image_version = local.oauth2_proxy_image_version
   session_redis = {
