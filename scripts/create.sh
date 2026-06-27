@@ -35,8 +35,25 @@ if [ -n "$vault_name" ] && command -v az >/dev/null 2>&1; then
         --query value -o tsv 2>/dev/null) && [ -n "$ssh_key" ]; then
     printf '%s\n' "$ssh_key" | ssh-add - >/dev/null 2>&1 \
       && echo "Loaded SSH key from Key Vault $vault_name into ssh-agent"
+
+    # Ensure Twingate resources are authenticated before Terraform touches the
+    # cluster.  `twingate resources` lists each resource with an AUTH STATUS column;
+    # any resource whose status does NOT contain "Auth expires" needs re-auth.
+    if command -v twingate >/dev/null 2>&1; then
+      while IFS= read -r resource_name; do
+        [ -z "$resource_name" ] && continue
+        echo "Twingate resource \"$resource_name\" is not authenticated — triggering auth…"
+        twingate auth "$resource_name"
+      done < <(
+        twingate resources 2>/dev/null \
+          | tail -n +2 \
+          | grep -v 'Auth expires' \
+          | sed 's/\t.*//'
+      )
+    fi
   fi
 fi
+
 
 terraform plan -out=tfplan
 # terraform plan -refresh-only -out=tfplan
