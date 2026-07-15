@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ps -p 1 -o comm=)",
+      "Read(//etc/**)",
+      "Bash(systemctl is-active *)",
+      "Bash(systemctl status *)",
+      "Bash(twingate config *)",
+      "Bash(twingate setup *)",
+      "Bash(sudo -n cat /etc/twingate/config.json)",
+      "Bash(sudo -n journalctl -u twingate --no-pager -n 60)",
+      "Read(//var/log/**)",
+      "Bash(sudo -n find /var/log -iname '*twingate*')",
+      "Bash(twingate-notifier --help)",
+      "Bash(twingate-notifier console *)"
+    ]
+  }
+}

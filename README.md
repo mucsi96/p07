@@ -35,7 +35,7 @@ nix develop
 
 Alternatively install [direnv](https://direnv.net/) and run `direnv allow`
 once — the committed `.envrc` then loads the shell automatically. The shell
-provides `az`, `terraform`, `helm`, `kubectl`, `node`, `redis-cli`, `azwi`,
+provides `az`, `terraform`, `helm`, `kubectl`, `node`, `redis-cli`,
 `kubelogin`, `jq`, and `python3`.
 
 Inside the shell, run `scripts/install_dependencies.sh` — it seeds the local
@@ -50,6 +50,26 @@ service, so it cannot come from the flake. Install it once system-wide:
 ```bash
 curl -s https://binaries.twingate.com/client/linux/install.sh | sudo bash
 ```
+
+Once installed, entering the dev shell (`nix develop`) checks the client's
+status and, when it isn't `online`, reminds you how to connect:
+
+```bash
+twingate start   # starts the daemon (prompts for sudo) and connects
+```
+
+On this headless WSL box Twingate cannot open a browser to complete login.
+When it needs authentication, run the notifier in a second terminal to surface
+the auth URL, then open that URL in your Windows browser and log in:
+
+```bash
+twingate-notifier console
+```
+
+The same applies to the per-resource authentication in `scripts/create.sh` and
+`scripts/destroy.sh` (`twingate auth <resource>`): keep a `twingate-notifier
+console` open in another terminal during those runs to catch each resource's
+auth URL.
 
 ### Azure backend
 

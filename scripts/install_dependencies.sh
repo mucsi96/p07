@@ -4,8 +4,8 @@ set -e  # Exit immediately if a command exits with a non-zero status
 
 VAULT_NAME=${AZURE_KEYVAULT_NAME:-p07}
 
-# All CLI tools (az, terraform, helm, kubectl, node, redis-cli, azwi,
-# kubelogin, jq, python3) are provided by the Nix flake dev shell — enter it
+# All CLI tools (az, terraform, helm, kubectl, node, redis-cli, kubelogin,
+# jq, python3) are provided by the Nix flake dev shell — enter it
 # with `nix develop` (or via direnv and the committed .envrc) before running
 # this script.
 for tool in az terraform helm python3; do

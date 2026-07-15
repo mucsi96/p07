@@ -142,9 +142,6 @@ locals {
   # in each app's Key Vault so the SPA can use it without further URL juggling.
   client_log_url = "https://${local.faro_hostname}/collect"
 
-  module_source_base = "git::https://github.com/mucsi96/k8s-modules.git//modules"
-  module_source_ref  = "v-43"
-
   oauth2_proxy_chart_version = "10.4.3"  #https://github.com/oauth2-proxy/manifests/releases
   oauth2_proxy_image_version = "v7.15.2" #https://github.com/oauth2-proxy/oauth2-proxy/releases
 }
@@ -204,14 +201,14 @@ data "cloudflare_ip_ranges" "cloudflare" {}
 # Created before the server: its connector tokens are baked into the server's
 # cloud-init user_data. No depends_on — must NOT order after setup_cluster.
 module "setup_twingate_connector" {
-  source           = "${local.module_source_base}/setup_twingate_connector?ref=${local.module_source_ref}"
+  source           = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_twingate_connector?ref=v-45"
   environment_name = var.environment_name
 }
 
 # Needs the server's address/port, so it orders after provision_hetzner_server
 # via field references. No depends_on (would cycle with ssh_ready_wait_for).
 module "setup_twingate_access" {
-  source            = "${local.module_source_base}/setup_twingate_access?ref=${local.module_source_ref}"
+  source            = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_twingate_access?ref=v-45"
   environment_name  = var.environment_name
   remote_network_id = module.setup_twingate_connector.remote_network_id
   k8s_host          = module.provision_hetzner_server.ipv4_address
@@ -220,7 +217,7 @@ module "setup_twingate_access" {
 }
 
 module "provision_hetzner_server" {
-  source = "${local.module_source_base}/provision_hetzner_server?ref=${local.module_source_ref}"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/provision_hetzner_server?ref=v-45"
 
   server_name            = var.environment_name
   server_type            = "cpx32"
@@ -239,7 +236,7 @@ module "provision_hetzner_server" {
 }
 
 module "setup_cluster" {
-  source = "${local.module_source_base}/setup_cluster?ref=${local.module_source_ref}"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_cluster?ref=v-45"
 
   host                          = module.provision_hetzner_server.ipv4_address
   ssh_port                      = module.provision_hetzner_server.ssh_port
@@ -256,7 +253,7 @@ module "setup_cluster" {
 }
 
 module "create_redis_namespace" {
-  source           = "${local.module_source_base}/create_app_namespace?ref=${local.module_source_ref}"
+  source           = "git::https://github.com/mucsi96/k8s-modules.git//modules/create_app_namespace?ref=v-45"
   environment_name = var.environment_name
   k8s_namespace    = "redis"
 
@@ -266,13 +263,13 @@ module "create_redis_namespace" {
 }
 
 module "create_redis" {
-  source        = "${local.module_source_base}/setup_redis?ref=${local.module_source_ref}"
+  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_redis?ref=v-45"
   k8s_name      = "redis"
   k8s_namespace = module.create_redis_namespace.k8s_namespace
 }
 
 module "setup_ingress_controller" {
-  source = "${local.module_source_base}/setup_ingress_controller?ref=${local.module_source_ref}"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_ingress_controller?ref=v-45"
 
   environment_name           = var.environment_name
   subscription_id            = var.azure_subscription_id
@@ -296,14 +293,14 @@ module "setup_ingress_controller" {
 }
 
 module "setup_metrics_server" {
-  source                       = "${local.module_source_base}/setup_metrics_server?ref=${local.module_source_ref}"
+  source                       = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_metrics_server?ref=v-45"
   metrics_server_chart_version = "3.13.0" #https://github.com/kubernetes-sigs/metrics-server/releases
   metrics_server_image_version = "v0.8.1" #https://github.com/kubernetes-sigs/metrics-server/releases
   wait_for                     = module.setup_ingress_controller.traefik_ready
 }
 
 module "setup_k8s_dashboard" {
-  source = "${local.module_source_base}/setup_k8s_dashboard?ref=${local.module_source_ref}"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_k8s_dashboard?ref=v-45"
 
   hostname                   = local.k8s_dashboard_hostname
   tenant_id                  = data.azurerm_client_config.current.tenant_id
@@ -322,7 +319,7 @@ module "setup_k8s_dashboard" {
 }
 
 module "create_database_namespace" {
-  source           = "${local.module_source_base}/create_app_namespace?ref=${local.module_source_ref}"
+  source           = "git::https://github.com/mucsi96/k8s-modules.git//modules/create_app_namespace?ref=v-45"
   environment_name = var.environment_name
   k8s_namespace    = "db"
 
@@ -332,14 +329,14 @@ module "create_database_namespace" {
 }
 
 module "setup_prometheus_operator_crds" {
-  source = "${local.module_source_base}/setup_prometheus_operator_crds?ref=${local.module_source_ref}"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_prometheus_operator_crds?ref=v-45"
 
   prometheus_operator_crds_chart_version = "28.0.1" #https://github.com/prometheus-community/helm-charts/releases?q=prometheus-operator-crds
   wait_for                               = module.setup_ingress_controller.traefik_ready
 }
 
 module "create_database" {
-  source        = "${local.module_source_base}/create_postgres_database?ref=${local.module_source_ref}"
+  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/create_postgres_database?ref=v-45"
   k8s_name      = "postgres1"
   k8s_namespace = module.create_database_namespace.k8s_namespace
   db_name       = "postgres1"
@@ -359,7 +356,7 @@ locals {
 }
 
 module "register_grafana_dashboard" {
-  source = "${local.module_source_base}/register_webapp?ref=${local.module_source_ref}"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_webapp?ref=v-45"
 
   display_name  = "Grafana - ${var.environment_name}"
   owner         = local.owner
@@ -367,7 +364,7 @@ module "register_grafana_dashboard" {
 }
 
 module "register_prometheus_dashboard" {
-  source = "${local.module_source_base}/register_webapp?ref=${local.module_source_ref}"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_webapp?ref=v-45"
 
   display_name  = "Prometheus - ${var.environment_name}"
   owner         = local.owner
@@ -375,7 +372,7 @@ module "register_prometheus_dashboard" {
 }
 
 module "setup_prometheus_operator" {
-  source = "${local.module_source_base}/setup_prometheus_operator?ref=${local.module_source_ref}"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_prometheus_operator?ref=v-45"
 
   grafana_hostname                    = local.grafana_hostname
   prometheus_hostname                 = local.prometheus_hostname
@@ -403,7 +400,7 @@ module "setup_prometheus_operator" {
 }
 
 module "setup_loki" {
-  source = "${local.module_source_base}/setup_loki?ref=${local.module_source_ref}"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_loki?ref=v-45"
 
   loki_chart_version  = "7.0.0" #https://github.com/grafana/loki/blob/main/production/helm/loki/Chart.yaml
   alloy_chart_version = "1.8.1" #https://github.com/grafana/helm-charts/releases?q=alloy
@@ -416,7 +413,7 @@ module "setup_loki" {
 }
 
 module "register_cloudbeaver" {
-  source = "${local.module_source_base}/register_webapp?ref=${local.module_source_ref}"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_webapp?ref=v-45"
 
   display_name  = "cloudbeaver - ${var.environment_name}"
   owner         = local.owner
@@ -424,7 +421,7 @@ module "register_cloudbeaver" {
 }
 
 module "setup_cloudbeaver" {
-  source = "${local.module_source_base}/setup_cloudbeaver?ref=${local.module_source_ref}"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_cloudbeaver?ref=v-45"
 
   hostname                   = local.cloudbeaver_hostname
   tenant_id                  = data.azurerm_client_config.current.tenant_id
@@ -449,7 +446,7 @@ module "setup_cloudbeaver" {
 }
 
 module "setup_backup_app" {
-  source                     = "${local.module_source_base}/setup_backup_app?ref=${local.module_source_ref}"
+  source                     = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_backup_app?ref=v-45"
   environment_name           = var.environment_name
   azure_location             = var.azure_location
   owner                      = local.owner
@@ -500,7 +497,7 @@ module "setup_backup_app" {
 }
 
 module "setup_learn_language_app" {
-  source                     = "${local.module_source_base}/setup_learn_language_app?ref=${local.module_source_ref}"
+  source                     = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_learn_language_app?ref=v-45"
   environment_name           = var.environment_name
   azure_location             = var.azure_location
   owner                      = local.owner
@@ -520,7 +517,7 @@ module "setup_learn_language_app" {
 }
 
 module "setup_hello_app" {
-  source                     = "${local.module_source_base}/setup_hello_app?ref=${local.module_source_ref}"
+  source                     = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_hello_app?ref=v-45"
   environment_name           = var.environment_name
   azure_location             = var.azure_location
   owner                      = local.owner
@@ -540,7 +537,7 @@ module "setup_hello_app" {
 }
 
 module "setup_training_log_app" {
-  source                     = "${local.module_source_base}/setup_training_log_app?ref=${local.module_source_ref}"
+  source                     = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_training_log_app?ref=v-45"
   environment_name           = var.environment_name
   azure_location             = var.azure_location
   owner                      = local.owner
@@ -559,8 +556,29 @@ module "setup_training_log_app" {
   wait_for                   = module.setup_ingress_controller.traefik_ready
 }
 
+module "setup_expense_tracker_app" {
+  source                     = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_expense_tracker_app?ref=v-45"
+
+  environment_name           = var.environment_name
+  azure_location             = var.azure_location
+  owner                      = local.owner
+  k8s_host                   = module.setup_cluster.k8s_host
+  k8s_cluster_ca_certificate = module.setup_cluster.k8s_cluster_ca_certificate
+  k8s_oidc_issuer_url        = module.setup_cluster.oidc_issuer_url
+  hostname                   = data.azurerm_key_vault_secret.dns_zone.value
+  tenant_id                  = data.azurerm_client_config.current.tenant_id
+  azure_subscription_id      = var.azure_subscription_id
+  k8s_oidc_config            = module.setup_cluster.k8s_oidc_config
+  client_log_url             = local.client_log_url
+  db_jdbc_url                = module.create_database.jdbc_url
+  db_username                = module.create_database.username
+  db_password                = module.create_database.password
+  twingate_service_key       = module.setup_twingate_access.service_key
+  wait_for                   = module.setup_ingress_controller.traefik_ready
+}
+
 # module "setup_party_app" {
-#   source                     = "${local.module_source_base}/setup_party_app?ref=${local.module_source_ref}"
+#   source                     = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_party_app?ref=v-45"
 #   environment_name           = var.environment_name
 #   azure_location             = var.azure_location
 #   owner                      = local.owner
