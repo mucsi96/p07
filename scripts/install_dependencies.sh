@@ -4,91 +4,33 @@ set -e  # Exit immediately if a command exits with a non-zero status
 
 VAULT_NAME=${AZURE_KEYVAULT_NAME:-p07}
 
-# Detect if running on Ubuntu
-if [ "$(uname -s)" = "Linux" ] && [ -f /etc/os-release ]; then
-    . /etc/os-release
-    if [ "$ID" = "ubuntu" ]; then
-        echo "Running on Ubuntu. Checking dependencies..."
-
-        # Check and install azure-cli
-        if ! command -v az &> /dev/null; then
-            echo "Installing Azure CLI..."
-            curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
-        else
-            echo "Azure CLI is already installed."
-        fi
-
-        # Check and install terraform
-        if ! command -v terraform &> /dev/null; then
-            echo "Installing Terraform..."
-            sudo snap install terraform --classic
-        else
-            echo "Terraform is already installed."
-        fi
-
-        # Check and install helm
-        if ! command -v helm &> /dev/null; then
-            echo "Installing Helm..."
-            sudo snap install helm --classic
-        else
-            echo "Helm is already installed."
-        fi
-
-        # Check and install NodeJS
-        if ! command -v node &> /dev/null; then
-            echo "Installing NodeJS..."
-            sudo snap install node --classic
-        else
-            echo "NodeJS is already installed."
-        fi
-
-        # Check and install redis-cli
-        if ! command -v redis-cli &> /dev/null; then
-            echo "Installing redis-tools..."
-            sudo apt-get update && sudo apt-get install -y redis-tools
-        else
-            echo "redis-cli is already installed."
-        fi
-
-        # Check and install azwi
-        if ! command -v azwi &> /dev/null; then
-            echo "Installing azwi..."
-            tmp_dir=$(mktemp -d)
-            azwi_version=$(curl -s https://api.github.com/repos/Azure/azure-workload-identity/releases/latest | grep -m1 '"tag_name":' | cut -d'"' -f4 || true)
-            curl -sL "https://github.com/Azure/azure-workload-identity/releases/download/${azwi_version}/azwi-${azwi_version}-linux-amd64.tar.gz" -o "$tmp_dir/azwi.tar.gz"
-            sudo tar -xzf "$tmp_dir/azwi.tar.gz" -C /usr/local/bin azwi
-            sudo chmod 755 /usr/local/bin/azwi
-            rm -rf "$tmp_dir"
-        else
-            echo "azwi is already installed."
-        fi
-
-        # Check and install Twingate client (runs inside WSL so Terraform
-        # and the tunnel share the same network namespace; requires
-        # systemd — [boot] systemd=true in /etc/wsl.conf).
-        if ! command -v twingate &> /dev/null; then
-            echo "Installing Twingate client..."
-            curl -s https://binaries.twingate.com/client/linux/install.sh | sudo bash
-        else
-            echo "Twingate client is already installed."
-        fi
-
-        # Check and install kubelogin (used by .kube/oidc-config exec block to
-        # mint Entra ID tokens for kube-apiserver; works for both `az login`
-        # users and GitHub workload-identity pipelines).
-        if ! command -v kubelogin &> /dev/null; then
-            echo "Installing kubelogin..."
-            tmp_dir=$(mktemp -d)
-            kubelogin_version=$(curl -s https://api.github.com/repos/Azure/kubelogin/releases/latest | grep -m1 '"tag_name":' | cut -d'"' -f4 || true)
-            curl -sL "https://github.com/Azure/kubelogin/releases/download/${kubelogin_version}/kubelogin-linux-amd64.zip" -o "$tmp_dir/kubelogin.zip"
-            unzip -q "$tmp_dir/kubelogin.zip" -d "$tmp_dir"
-            sudo install -m 0755 "$tmp_dir/bin/linux_amd64/kubelogin" /usr/local/bin/kubelogin
-            rm -rf "$tmp_dir"
-        else
-            echo "kubelogin is already installed."
-        fi
-
+# All CLI tools (az, terraform, helm, kubectl, node, redis-cli, azwi,
+# kubelogin, jq, python3) are provided by the Nix flake dev shell — enter it
+# with `nix develop` (or via direnv and the committed .envrc) before running
+# this script.
+for tool in az terraform helm python3; do
+    if ! command -v "$tool" &> /dev/null; then
+        echo "Error: '$tool' not found in PATH." >&2
+        echo "Enter the Nix dev shell first: nix develop" >&2
+        exit 1
     fi
+done
+
+# Twingate is the one dependency that cannot come from the flake: its client
+# relies on a system-level systemd service (runs inside WSL so Terraform and
+# the tunnel share the same network namespace; requires [boot] systemd=true
+# in /etc/wsl.conf), so it has to be installed system-wide.
+if ! command -v twingate &> /dev/null; then
+    echo "Note: Twingate client not found. Install it system-wide with:"
+    echo "  curl -s https://binaries.twingate.com/client/linux/install.sh | sudo bash"
+fi
+
+# Seed the local Python virtual environment. Terraform's ansible provider
+# uses .venv/bin/python3 as its interpreter (see main.tf), so the venv path
+# must stay stable even though python itself comes from the flake.
+if [ ! -d .venv ]; then
+    echo "Creating Python virtual environment at .venv..."
+    python3 -m venv .venv
 fi
 
 source .venv/bin/activate
