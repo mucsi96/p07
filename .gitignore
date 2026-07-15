@@ -6,3 +6,4 @@ tfplan
 backend.tf
 .generated/
 .venv/
+.direnv/

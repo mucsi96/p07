@@ -24,15 +24,31 @@ Terraform state, secrets, and the OIDC discovery document live in Azure
 
 ### Tools
 
-Run `scripts/install_dependencies.sh` on Ubuntu (it installs `az`, `terraform`,
-`helm`, `node`, `azwi`, the Ansible collections, and seeds the local Python
-virtual environment from `requirements.txt`/`requirements.yml`).
-
-A Python virtual environment is expected at `.venv/` — create it once with:
+All CLI tools come from the Nix flake dev shell. Install
+[Nix](https://nixos.org/download/) with flakes enabled (add
+`experimental-features = nix-command flakes` to `~/.config/nix/nix.conf` if
+needed), then enter the shell from the repository root:
 
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate
+nix develop
+```
+
+Alternatively install [direnv](https://direnv.net/) and run `direnv allow`
+once — the committed `.envrc` then loads the shell automatically. The shell
+provides `az`, `terraform`, `helm`, `kubectl`, `node`, `redis-cli`, `azwi`,
+`kubelogin`, `jq`, and `python3`.
+
+Inside the shell, run `scripts/install_dependencies.sh` — it seeds the local
+Python virtual environment at `.venv/` from
+`requirements.txt`/`requirements.yml` (Terraform's ansible provider uses
+`.venv/bin/python3` as its interpreter), installs the Ansible collections,
+adds the Helm repository, and initializes the Terraform backend.
+
+The one exception is the Twingate client: it needs a system-level systemd
+service, so it cannot come from the flake. Install it once system-wide:
+
+```bash
+curl -s https://binaries.twingate.com/client/linux/install.sh | sudo bash
 ```
 
 ### Azure backend
@@ -66,8 +82,10 @@ written by the `setup_cluster` module (`k8s-config`, `k8s-host`,
 
 ## Usage
 
+All commands assume you are inside the Nix dev shell (`nix develop` or direnv).
+
 ```bash
-# Install/refresh tools, providers, and Ansible collections
+# Refresh the Python venv, Ansible collections, Helm repo, and Terraform init
 bash scripts/install_dependencies.sh
 
 # Plan + apply the environment
