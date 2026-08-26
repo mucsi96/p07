@@ -142,8 +142,8 @@ locals {
   # in each app's Key Vault so the SPA can use it without further URL juggling.
   client_log_url = "https://${local.faro_hostname}/collect"
 
-  oauth2_proxy_chart_version = "10.4.3"  #https://github.com/oauth2-proxy/manifests/releases
-  oauth2_proxy_image_version = "v7.15.2" #https://github.com/oauth2-proxy/oauth2-proxy/releases
+  oauth2_proxy_chart_version = "10.7.0"  #https://github.com/oauth2-proxy/manifests/releases
+  oauth2_proxy_image_version = "v7.15.4" #https://github.com/oauth2-proxy/oauth2-proxy/releases
 
   expense_tracker_hostname = "expenses.${data.azurerm_key_vault_secret.dns_zone.value}"
   bank_notifications_path  = "/api/bank-notifications"
@@ -277,8 +277,8 @@ module "setup_ingress_controller" {
   environment_name           = var.environment_name
   subscription_id            = var.azure_subscription_id
   dns_zone                   = data.azurerm_key_vault_secret.dns_zone.value
-  traefik_chart_version      = "40.0.0" #https://github.com/traefik/traefik-helm-chart/releases
-  traefik_version            = "v3.7.0" #https://github.com/traefik/traefik/releases
+  traefik_chart_version      = "41.3.0" #https://github.com/traefik/traefik-helm-chart/releases
+  traefik_version            = "v3.7.11" #https://github.com/traefik/traefik/releases
   cloudflare_zone_id         = data.azurerm_key_vault_secret.cloudflare_zone_id.value
   origin_ipv4                = module.provision_hetzner_server.ipv4_address
   cloudflare_ipv4_cidrs      = data.cloudflare_ip_ranges.cloudflare.ipv4_cidrs
@@ -304,8 +304,8 @@ module "setup_ingress_controller" {
 
 module "setup_metrics_server" {
   source                       = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_metrics_server?ref=v-51"
-  metrics_server_chart_version = "3.13.0" #https://github.com/kubernetes-sigs/metrics-server/releases
-  metrics_server_image_version = "v0.8.1" #https://github.com/kubernetes-sigs/metrics-server/releases
+  metrics_server_chart_version = "3.14.0" #https://github.com/kubernetes-sigs/metrics-server/releases
+  metrics_server_image_version = "v0.9.0" #https://github.com/kubernetes-sigs/metrics-server/releases
   wait_for                     = module.setup_ingress_controller.traefik_ready
 }
 
@@ -317,8 +317,8 @@ module "setup_k8s_dashboard" {
   client_id                  = module.setup_cluster.cluster_monitor_client_id
   client_secret              = module.setup_cluster.cluster_monitor_client_secret
   valid_email                = data.azurerm_key_vault_secret.letsencrypt_email.value
-  headlamp_chart_version     = "0.41.0"  #https://github.com/headlamp-k8s/headlamp/releases
-  headlamp_image_version     = "v0.41.0" #https://github.com/headlamp-k8s/headlamp/releases
+  headlamp_chart_version     = "0.45.0"  #https://github.com/headlamp-k8s/headlamp/releases
+  headlamp_image_version     = "v0.45.0" #https://github.com/headlamp-k8s/headlamp/releases
   oauth2_proxy_chart_version = local.oauth2_proxy_chart_version
   oauth2_proxy_image_version = local.oauth2_proxy_image_version
   session_redis = {
@@ -341,7 +341,7 @@ module "create_database_namespace" {
 module "setup_prometheus_operator_crds" {
   source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_prometheus_operator_crds?ref=v-51"
 
-  prometheus_operator_crds_chart_version = "28.0.1" #https://github.com/prometheus-community/helm-charts/releases?q=prometheus-operator-crds
+  prometheus_operator_crds_chart_version = "31.0.1" #https://github.com/prometheus-community/helm-charts/releases?q=prometheus-operator-crds
   wait_for                               = module.setup_ingress_controller.traefik_ready
 }
 
@@ -392,7 +392,7 @@ module "setup_prometheus_operator" {
   prometheus_client_id                = module.register_prometheus_dashboard.client_id
   prometheus_client_secret            = module.register_prometheus_dashboard.client_secret
   valid_email                         = data.azurerm_key_vault_secret.letsencrypt_email.value
-  kube_prometheus_stack_chart_version = "84.5.0" #https://github.com/prometheus-community/helm-charts/releases?q=kube-prometheus-stack
+  kube_prometheus_stack_chart_version = "88.5.4" #https://github.com/prometheus-community/helm-charts/releases?q=kube-prometheus-stack
   oauth2_proxy_chart_version          = local.oauth2_proxy_chart_version
   oauth2_proxy_image_version          = local.oauth2_proxy_image_version
   session_redis = {
@@ -412,8 +412,8 @@ module "setup_prometheus_operator" {
 module "setup_loki" {
   source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_loki?ref=v-51"
 
-  loki_chart_version  = "7.0.0" #https://github.com/grafana/loki/blob/main/production/helm/loki/Chart.yaml
-  alloy_chart_version = "1.8.1" #https://github.com/grafana/helm-charts/releases?q=alloy
+  loki_chart_version  = "7.3.0" #https://github.com/grafana/loki/blob/main/production/helm/loki/Chart.yaml
+  alloy_chart_version = "1.12.0" #https://github.com/grafana/helm-charts/releases?q=alloy
   grafana_namespace   = module.setup_prometheus_operator.namespace
   faro_hostname       = local.faro_hostname
   faro_cors_allowed_origins = [
