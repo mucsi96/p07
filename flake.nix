@@ -34,6 +34,10 @@
           ];
 
           shellHook = ''
+            # Same kubeconfig VS Code uses ("''${workspaceFolder}/.kube/admin-config"
+            # in .vscode/settings.json); pulled by scripts/pull_kube_admin_config.sh.
+            export KUBECONFIG="$PWD/.kube/admin-config"
+
             if [ ! -d .venv ]; then
               echo "No .venv found — run 'bash scripts/install_dependencies.sh' to seed the"
               echo "Python virtual environment, Ansible collections, and Terraform backend."
