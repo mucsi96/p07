@@ -34,6 +34,14 @@
           ];
 
           shellHook = ''
+            # VS Code workspaceFolder equivalent: the project root is where the dev where the dev
+            # shell is entered. Fall back to the git toplevel when entered from
+            # a subdirectory.
+            if [ -z "$KUBECONFIG" ]; then
+              _project_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
+              export KUBECONFIG="$_project_root/.kube/admin-config"
+            fi
+
             if [ ! -d .venv ]; then
               echo "No .venv found — run 'bash scripts/install_dependencies.sh' to seed the"
               echo "Python virtual environment, Ansible collections, and Terraform backend."
