@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-31T15:24:01Z",
+  "generatedAt": "2026-08-31T16:10:37Z",
   "units": {
     "cpu": "millicores",
     "memory": "Mi"
@@ -11,21 +11,21 @@
       "namespace": "azure-workload-identity-system",
       "name": "azure-wi-webhook-controller-manager",
       "replicas": {
-        "desired": 2,
-        "ready": 2
+        "desired": 1,
+        "ready": 1
       },
       "containers": [
         {
           "name": "manager",
           "cpu": {
-            "request": 100,
+            "request": 10,
             "limit": 100,
-            "usage": 6
+            "usage": 3
           },
           "memory": {
-            "request": 20,
-            "limit": 30,
-            "usage": 41
+            "request": 32,
+            "limit": 64,
+            "usage": 12
           }
         }
       ]
@@ -81,12 +81,12 @@
           "cpu": {
             "request": 50,
             "limit": 500,
-            "usage": 5
+            "usage": 2
           },
           "memory": {
             "request": 512,
             "limit": 1024,
-            "usage": 367
+            "usage": 371
           }
         }
       ]
@@ -103,14 +103,14 @@
         {
           "name": "cloudbeaver",
           "cpu": {
-            "request": null,
+            "request": 10,
             "limit": null,
             "usage": 7
           },
           "memory": {
-            "request": null,
-            "limit": null,
-            "usage": 286
+            "request": 320,
+            "limit": 512,
+            "usage": 201
           }
         }
       ]
@@ -127,14 +127,14 @@
         {
           "name": "oauth2-proxy",
           "cpu": {
-            "request": null,
+            "request": 5,
             "limit": null,
             "usage": 1
           },
           "memory": {
-            "request": null,
-            "limit": null,
-            "usage": 7
+            "request": 16,
+            "limit": 64,
+            "usage": 6
           }
         }
       ]
@@ -153,12 +153,12 @@
           "cpu": {
             "request": 20,
             "limit": 500,
-            "usage": 7
+            "usage": 14
           },
           "memory": {
             "request": 200,
             "limit": 300,
-            "usage": 139
+            "usage": 138
           }
         },
         {
@@ -171,7 +171,7 @@
           "memory": {
             "request": null,
             "limit": null,
-            "usage": 14
+            "usage": 12
           }
         }
       ]
@@ -195,7 +195,7 @@
           "memory": {
             "request": 32,
             "limit": 64,
-            "usage": 6
+            "usage": 5
           }
         },
         {
@@ -227,12 +227,12 @@
           "cpu": {
             "request": 100,
             "limit": 500,
-            "usage": 1
+            "usage": 2
           },
           "memory": {
             "request": 512,
             "limit": 1024,
-            "usage": 368
+            "usage": 366
           }
         }
       ]
@@ -288,12 +288,12 @@
           "cpu": {
             "request": 100,
             "limit": 500,
-            "usage": 2
+            "usage": 4
           },
           "memory": {
             "request": 512,
             "limit": 1024,
-            "usage": 356
+            "usage": 355
           }
         }
       ]
@@ -310,14 +310,14 @@
         {
           "name": "headlamp",
           "cpu": {
-            "request": null,
+            "request": 5,
             "limit": null,
-            "usage": 1
+            "usage": 6
           },
           "memory": {
-            "request": null,
-            "limit": null,
-            "usage": 20
+            "request": 32,
+            "limit": 128,
+            "usage": 23
           }
         }
       ]
@@ -334,14 +334,14 @@
         {
           "name": "oauth2-proxy",
           "cpu": {
-            "request": null,
+            "request": 5,
             "limit": null,
-            "usage": 1
+            "usage": 7
           },
           "memory": {
-            "request": null,
-            "limit": null,
-            "usage": 14
+            "request": 16,
+            "limit": 64,
+            "usage": 8
           }
         }
       ]
@@ -360,12 +360,12 @@
           "cpu": {
             "request": null,
             "limit": null,
-            "usage": 4
+            "usage": 8
           },
           "memory": {
             "request": null,
             "limit": null,
-            "usage": 24
+            "usage": 25
           }
         }
       ]
@@ -389,7 +389,7 @@
           "memory": {
             "request": 70,
             "limit": 170,
-            "usage": 18
+            "usage": 23
           }
         }
       ]
@@ -413,7 +413,7 @@
           "memory": {
             "request": null,
             "limit": null,
-            "usage": 13
+            "usage": 10
           }
         }
       ]
@@ -430,14 +430,14 @@
         {
           "name": "metrics-server",
           "cpu": {
-            "request": 100,
+            "request": 25,
             "limit": null,
-            "usage": 3
+            "usage": 4
           },
           "memory": {
-            "request": 200,
+            "request": 64,
             "limit": null,
-            "usage": 34
+            "usage": 31
           }
         }
       ]
@@ -493,12 +493,12 @@
           "cpu": {
             "request": 50,
             "limit": 1000,
-            "usage": 2
+            "usage": 1
           },
           "memory": {
             "request": 640,
             "limit": 1024,
-            "usage": 543
+            "usage": 539
           }
         }
       ]
@@ -535,7 +535,7 @@
           "memory": {
             "request": 20,
             "limit": 100,
-            "usage": 7
+            "usage": 6
           }
         }
       ]
@@ -554,12 +554,12 @@
           "cpu": {
             "request": 100,
             "limit": 500,
-            "usage": 3
+            "usage": 2
           },
           "memory": {
             "request": 512,
             "limit": 1024,
-            "usage": 410
+            "usage": 413
           }
         }
       ]
@@ -576,14 +576,14 @@
         {
           "name": "alloy",
           "cpu": {
-            "request": null,
+            "request": 5,
             "limit": null,
-            "usage": 3
+            "usage": 4
           },
           "memory": {
-            "request": null,
-            "limit": null,
-            "usage": 50
+            "request": 64,
+            "limit": 128,
+            "usage": 54
           }
         },
         {
@@ -591,12 +591,12 @@
           "cpu": {
             "request": 10,
             "limit": null,
-            "usage": 1
+            "usage": 0
           },
           "memory": {
             "request": 50,
             "limit": null,
-            "usage": 8
+            "usage": 7
           }
         }
       ]
@@ -613,64 +613,27 @@
         {
           "name": "loki",
           "cpu": {
-            "request": null,
+            "request": 10,
             "limit": null,
-            "usage": 10
+            "usage": 11
           },
           "memory": {
-            "request": null,
-            "limit": null,
-            "usage": 109
+            "request": 128,
+            "limit": 256,
+            "usage": 74
           }
         },
         {
           "name": "loki-sc-rules",
           "cpu": {
-            "request": null,
+            "request": 5,
             "limit": null,
             "usage": 1
           },
           "memory": {
-            "request": null,
-            "limit": null,
-            "usage": 76
-          }
-        }
-      ]
-    },
-    {
-      "kind": "StatefulSet",
-      "namespace": "monitoring",
-      "name": "alertmanager-kube-prometheus-stack-alertmanager",
-      "replicas": {
-        "desired": 1,
-        "ready": 1
-      },
-      "containers": [
-        {
-          "name": "alertmanager",
-          "cpu": {
-            "request": null,
-            "limit": null,
-            "usage": 1
-          },
-          "memory": {
-            "request": 200,
-            "limit": null,
-            "usage": 23
-          }
-        },
-        {
-          "name": "config-reloader",
-          "cpu": {
-            "request": null,
-            "limit": null,
-            "usage": 0
-          },
-          "memory": {
-            "request": null,
-            "limit": null,
-            "usage": 14
+            "request": 64,
+            "limit": 128,
+            "usage": 77
           }
         }
       ]
@@ -687,14 +650,14 @@
         {
           "name": "oauth2-proxy",
           "cpu": {
-            "request": null,
+            "request": 5,
             "limit": null,
             "usage": 1
           },
           "memory": {
-            "request": null,
-            "limit": null,
-            "usage": 8
+            "request": 16,
+            "limit": 64,
+            "usage": 10
           }
         }
       ]
@@ -711,40 +674,40 @@
         {
           "name": "grafana-sc-dashboard",
           "cpu": {
-            "request": null,
+            "request": 5,
             "limit": null,
             "usage": 1
           },
           "memory": {
-            "request": null,
-            "limit": null,
-            "usage": 77
+            "request": 64,
+            "limit": 128,
+            "usage": 82
           }
         },
         {
           "name": "grafana-sc-datasources",
           "cpu": {
-            "request": null,
+            "request": 5,
             "limit": null,
             "usage": 1
           },
           "memory": {
-            "request": null,
-            "limit": null,
-            "usage": 74
+            "request": 64,
+            "limit": 128,
+            "usage": 78
           }
         },
         {
           "name": "grafana",
           "cpu": {
-            "request": null,
+            "request": 50,
             "limit": null,
-            "usage": 24
+            "usage": 37
           },
           "memory": {
-            "request": null,
-            "limit": null,
-            "usage": 185
+            "request": 256,
+            "limit": 512,
+            "usage": 385
           }
         }
       ]
@@ -761,14 +724,14 @@
         {
           "name": "kube-state-metrics",
           "cpu": {
-            "request": null,
+            "request": 10,
             "limit": null,
-            "usage": 2
+            "usage": 1
           },
           "memory": {
-            "request": null,
-            "limit": null,
-            "usage": 28
+            "request": 48,
+            "limit": 128,
+            "usage": 20
           }
         }
       ]
@@ -785,14 +748,14 @@
         {
           "name": "kube-prometheus-stack",
           "cpu": {
-            "request": null,
+            "request": 10,
             "limit": null,
-            "usage": 4
+            "usage": 3
           },
           "memory": {
-            "request": null,
-            "limit": null,
-            "usage": 36
+            "request": 48,
+            "limit": 128,
+            "usage": 23
           }
         }
       ]
@@ -809,14 +772,14 @@
         {
           "name": "prometheus",
           "cpu": {
-            "request": null,
+            "request": 50,
             "limit": null,
-            "usage": 44
+            "usage": 14
           },
           "memory": {
-            "request": null,
-            "limit": null,
-            "usage": 601
+            "request": 640,
+            "limit": 1024,
+            "usage": 395
           }
         },
         {
@@ -824,12 +787,12 @@
           "cpu": {
             "request": null,
             "limit": null,
-            "usage": 0
+            "usage": 1
           },
           "memory": {
             "request": null,
             "limit": null,
-            "usage": 18
+            "usage": 11
           }
         }
       ]
@@ -846,13 +809,13 @@
         {
           "name": "oauth2-proxy",
           "cpu": {
-            "request": null,
+            "request": 5,
             "limit": null,
             "usage": 1
           },
           "memory": {
-            "request": null,
-            "limit": null,
+            "request": 16,
+            "limit": 64,
             "usage": 7
           }
         }
@@ -872,12 +835,12 @@
           "cpu": {
             "request": 10,
             "limit": 200,
-            "usage": 4
+            "usage": 6
           },
           "memory": {
             "request": 64,
             "limit": 256,
-            "usage": 5
+            "usage": 9
           }
         }
       ]
@@ -894,14 +857,14 @@
         {
           "name": "traefik",
           "cpu": {
-            "request": null,
+            "request": 10,
             "limit": null,
-            "usage": 1
+            "usage": 2
           },
           "memory": {
-            "request": null,
-            "limit": null,
-            "usage": 37
+            "request": 64,
+            "limit": 128,
+            "usage": 39
           }
         }
       ]
@@ -918,14 +881,14 @@
         {
           "name": "oauth2-proxy",
           "cpu": {
-            "request": null,
+            "request": 5,
             "limit": null,
             "usage": 1
           },
           "memory": {
-            "request": null,
-            "limit": null,
-            "usage": 7
+            "request": 16,
+            "limit": 64,
+            "usage": 6
           }
         }
       ]
@@ -962,7 +925,7 @@
           "memory": {
             "request": 20,
             "limit": 100,
-            "usage": 7
+            "usage": 6
           }
         }
       ]
@@ -986,7 +949,7 @@
           "memory": {
             "request": 512,
             "limit": 1024,
-            "usage": 364
+            "usage": 373
           }
         }
       ]
