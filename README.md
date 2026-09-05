@@ -157,13 +157,6 @@ that prefix. Populate all of these before running `scripts/create.sh`:
 | `cooking-claude-api-key` | `p07-cooking` | `claude-api-key` |
 | `cooking-openai-api-key` | `p07-cooking` | `openai-api-key` |
 
-To preserve credentials already stored in the current app vaults before the
-first destroy, copy them into the master vault:
-
-```bash
-scripts/copy_secrets.sh p07
-```
-
 Terraform will write back the following Key Vault secrets after a successful
 apply: `host`, `ssh-user-name`, `ssh-port`, `ssh-private-key`, the rotated
 `netcup-refresh-token`, `issuer`, `tenant-id` plus the cluster credentials
