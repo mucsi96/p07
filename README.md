@@ -161,27 +161,6 @@ bash scripts/pull_kube_admin_config.sh
 bash scripts/destroy.sh
 ```
 
-### Hetzner migration
-
-This is a blue/green host migration. Before applying this configuration, move
-the existing `provision_hetzner_server` host and any rollback-critical cluster
-resources to a separate Terraform state. Do not let a normal plan destroy the
-old host, because its host-path volumes contain the only retained copy of the
-application data. Use a separate Key Vault and workload-identity storage
-account during an overlap if rollback must remain possible.
-
-Stop writes, back up, and transfer `/data/database`, `/data/redis`,
-`/data/hello`, `/data/learn-language`, `/data/training-log`, `/data/party`,
-`/data/library`, `/data/expense-tracker`, and `/data/cooking`. Restore ownership
-and permissions and verify every PV/PVC before allowing writes. Keep
-`origin_ipv4` set to the old host until private access, identity, ingress,
-persistence, monitoring, logs, and applications have been validated on Netcup,
-then remove the override to cut over and retain a DNS rollback path.
-
-The static host-path volumes do not migrate data. Follow the complete upstream
-[migration guide](https://github.com/mucsi96/k8s-modules#migration) before the
-first apply.
-
 Convenience helpers:
 
 - `scripts/authenticate_netcup.sh` — authorize through Netcup's OAuth device
@@ -191,11 +170,9 @@ Convenience helpers:
 - `scripts/expose_traefik_dashboard.sh` — port-forward the Traefik
   dashboard to `http://localhost:8080/dashboard/`.
 
-## Customisation
+## Configuration
 
-`variables.tf` declares only the optional Cloudflare origin override used
-during cutover. Netcup identifiers, authentication, and image selection are
-loaded from Azure Key Vault; the remaining server settings are hardcoded. The
-other root variables (`environment_name`,
+Netcup identifiers, authentication, and image selection are loaded from Azure
+Key Vault; the remaining server settings are hardcoded. The root variables (`environment_name`,
 `azure_subscription_id`, `azure_location`, `storage_account_name`) are written
 to `backend.tf` by `scripts/init.yaml` during bootstrap.

@@ -293,7 +293,7 @@ module "setup_ingress_controller" {
   dns_zone              = data.azurerm_key_vault_secret.dns_zone.value
   k8s_config            = module.setup_cluster.k8s_config
   cloudflare_zone_id    = data.azurerm_key_vault_secret.cloudflare_zone_id.value
-  origin_ipv4           = coalesce(var.origin_ipv4, module.provision_server.ipv4_address)
+  origin_ipv4           = module.provision_server.ipv4_address
   cloudflare_ipv4_cidrs = data.cloudflare_ip_ranges.cloudflare.ipv4_cidrs
   cloudflare_ipv6_cidrs = data.cloudflare_ip_ranges.cloudflare.ipv6_cidrs
   authorized_as         = data.azurerm_key_vault_secret.authorized_as.value
