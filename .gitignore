@@ -1,9 +1,10 @@
 terraform.tfstate
 terraform.tfstate.backup
-tfplan
+tfplan*
 .terraform/
 .kube/
 backend.tf
 .generated/
 .venv/
 .direnv/
+resources.json
