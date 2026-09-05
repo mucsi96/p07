@@ -117,8 +117,8 @@ bash scripts/init.sh p07
 
 ### Azure Key Vault secrets
 
-Populate the following secrets in the `p07` Key Vault before running
-`terraform apply`:
+The `p07` Key Vault is the persistent master vault. Populate the following
+platform secrets before running `scripts/create.sh`:
 
 | Secret Name | Description | Where to retrieve the value |
 |---|---|---|
@@ -135,6 +135,27 @@ Populate the following secrets in the `p07` Key Vault before running
 | `netcup-refresh-token` | Long-lived SCP OpenID Connect refresh token | `scripts/authenticate_netcup.sh` |
 | `netcup-image-flavour-id` | Server-specific Debian 13 image flavour ID | `scripts/authenticate_netcup.sh` |
 | `netcup-disk-name` | Server disk selected for the destructive installation | `scripts/authenticate_netcup.sh` |
+
+Application-owned credentials also live in the master vault. Their names use
+an app prefix; Terraform copies each value to the app-specific vault without
+that prefix. Populate all of these before running `scripts/create.sh`:
+
+| Master Secret Name | App Vault | App Secret Name |
+|---|---|---|
+| `hello-claude-api-key` | `p07-hello` | `claude-api-key` |
+| `learn-language-claude-api-key` | `p07-learn-language` | `claude-api-key` |
+| `learn-language-eleven-labs-api-key` | `p07-learn-language` | `eleven-labs-api-key` |
+| `learn-language-google-ai-api-key` | `p07-learn-language` | `google-ai-api-key` |
+| `learn-language-ideogram-api-key` | `p07-learn-language` | `ideogram-api-key` |
+| `learn-language-openai-api-key` | `p07-learn-language` | `openai-api-key` |
+| `learn-language-xai-api-key` | `p07-learn-language` | `xai-api-key` |
+| `training-log-strava-client-id` | `p07-training-log` | `strava-client-id` |
+| `training-log-strava-client-secret` | `p07-training-log` | `strava-client-secret` |
+| `training-log-withings-client-id` | `p07-training-log` | `withings-client-id` |
+| `training-log-withings-client-secret` | `p07-training-log` | `withings-client-secret` |
+| `library-openai-api-key` | `p07-library` | `openai-api-key` |
+| `cooking-claude-api-key` | `p07-cooking` | `claude-api-key` |
+| `cooking-openai-api-key` | `p07-cooking` | `openai-api-key` |
 
 Terraform will write back the following Key Vault secrets after a successful
 apply: `host`, `ssh-user-name`, `ssh-port`, `ssh-private-key`, the rotated
