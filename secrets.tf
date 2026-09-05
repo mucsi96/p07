@@ -1,25 +1,31 @@
 resource "azurerm_key_vault_secret" "host" {
   key_vault_id = data.azurerm_key_vault.kv.id
   name         = "host"
-  value        = module.provision_hetzner_server.ipv4_address
+  value        = module.provision_server.ipv4_address
 }
 
 resource "azurerm_key_vault_secret" "ssh_user_name" {
   key_vault_id = data.azurerm_key_vault.kv.id
   name         = "ssh-user-name"
-  value        = module.provision_hetzner_server.username
+  value        = module.provision_server.username
 }
 
 resource "azurerm_key_vault_secret" "ssh_private_key" {
   key_vault_id = data.azurerm_key_vault.kv.id
   name         = "ssh-private-key"
-  value        = module.provision_hetzner_server.ssh_private_key
+  value        = module.provision_server.ssh_private_key
 }
 
 resource "azurerm_key_vault_secret" "ssh_port" {
   key_vault_id = data.azurerm_key_vault.kv.id
   name         = "ssh-port"
-  value        = module.provision_hetzner_server.ssh_port
+  value        = module.provision_server.ssh_port
+}
+
+resource "azurerm_key_vault_secret" "netcup_refresh_token" {
+  key_vault_id = data.azurerm_key_vault.kv.id
+  name         = "netcup-refresh-token"
+  value        = module.provision_server.netcup_refresh_token
 }
 
 resource "azurerm_key_vault_secret" "issuer" {

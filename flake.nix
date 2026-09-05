@@ -1,5 +1,5 @@
 {
-  description = "Dev shell for p07 — Hetzner Cloud MicroK8s environment tooling";
+  description = "Dev shell for p07 Netcup k3s environment tooling";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
@@ -23,6 +23,7 @@
         default = pkgs.mkShell {
           packages = with pkgs; [
             azure-cli # az
+            curl
             terraform
             kubernetes-helm # helm
             kubectl
@@ -30,6 +31,7 @@
             redis # redis-cli
             kubelogin # Azure kubelogin, used by the .kube/oidc-config exec block
             jq
+            openssh # ssh-agent, ssh-add
             python3 # seeds .venv — Terraform's ansible provider interpreter (main.tf)
           ];
 

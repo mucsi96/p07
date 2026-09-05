@@ -4,17 +4,22 @@ set -e  # Exit immediately if a command exits with a non-zero status
 
 VAULT_NAME=${AZURE_KEYVAULT_NAME:-p07}
 
-# All CLI tools (az, terraform, helm, kubectl, node, redis-cli, kubelogin,
-# jq, python3) are provided by the Nix flake dev shell — enter it
+# Most CLI tools are provided by the Nix flake dev shell. Enter it
 # with `nix develop` (or via direnv and the committed .envrc) before running
 # this script.
-for tool in az terraform helm python3; do
+for tool in az terraform helm python3 curl jq ssh-agent ssh-add; do
     if ! command -v "$tool" &> /dev/null; then
         echo "Error: '$tool' not found in PATH." >&2
         echo "Enter the Nix dev shell first: nix develop" >&2
         exit 1
     fi
 done
+
+if ! command -v azwi &> /dev/null; then
+    echo "Error: 'azwi' not found in PATH." >&2
+    echo "Install it from https://github.com/Azure/azure-workload-identity/releases" >&2
+    exit 1
+fi
 
 # Twingate is the one dependency that cannot come from the flake: its client
 # relies on a system-level systemd service (runs inside WSL so Terraform and
@@ -34,6 +39,7 @@ if [ ! -d .venv ]; then
 fi
 
 source .venv/bin/activate
+unset PYTHONPATH
 
 python3 -m pip install -r requirements.txt
 
@@ -44,19 +50,15 @@ python3 -m pip install -r ~/.ansible/collections/ansible_collections/azure/azcol
 # Add the Helm repository
 helm repo add mucsi96 https://mucsi96.github.io/k8s-helm-charts
 
-# Check if backend.tf exists
-if [ ! -f backend.tf ]; then
-    echo "Fetching backend configuration from Key Vault..."
-    az keyvault secret show \
-      --vault-name "$VAULT_NAME" \
-      --name remote-backend-config \
-      --query value \
-      --output tsv > backend.tf
-    echo "Backend configuration saved to backend.tf."
+echo "Refreshing backend configuration from Key Vault..."
+backend_config=$(mktemp)
+trap 'rm -f "$backend_config"' EXIT
+az keyvault secret show \
+  --vault-name "$VAULT_NAME" \
+  --name remote-backend-config \
+  --query value \
+  --output tsv > "$backend_config"
+mv "$backend_config" backend.tf
+trap - EXIT
 
-    echo "Initializing Terraform..."
-    terraform init --upgrade
-else
-    echo "Backend configuration already exists."
-    terraform init
-fi
+terraform init --upgrade

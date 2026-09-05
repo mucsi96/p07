@@ -5,6 +5,7 @@ set -e  # Exit immediately if a command exits with a non-zero status
 resourceGroupName=p07
 
 source .venv/bin/activate
+unset PYTHONPATH
 
 ansible-playbook --inventory localhost, --extra-vars "resource_group_name=$resourceGroupName" scripts/init.yaml
 
