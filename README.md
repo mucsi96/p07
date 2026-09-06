@@ -37,7 +37,7 @@ nix develop
 
 Alternatively install [direnv](https://direnv.net/) and run `direnv allow`
 once — the committed `.envrc` then loads the shell automatically. The shell
-provides `az`, `terraform`, `helm`, `kubectl`, `node`, `redis-cli`,
+provides `az`, `terraform`, `helm`, `kubectl`, `node`, `psql`, `redis-cli`,
 `kubelogin`, `jq`, `curl`, `ssh-agent`, and `python3`. Install the
 [`azwi`](https://github.com/Azure/azure-workload-identity/releases) executable
 separately; it is used to publish the cluster's OIDC discovery documents.
@@ -182,10 +182,34 @@ bash scripts/pull_kube_admin_config.sh
 bash scripts/destroy.sh
 ```
 
+### Database roles
+
+Each database-backed application module provisions its own non-administrator
+login role and same-named schema. The PostgreSQL module only owns the database
+server, while the backup service consumes each application module's schema-owner
+credentials for schema-scoped backup and restore operations.
+
+Module release `v-70` provisions roles and schemas during Terraform apply over
+the existing operator SSH connection. The database descriptor includes its
+deployment, storage instance ID, and SSH host/port/user. `scripts/create.sh`
+loads the SSH agent; provisioning needs operator Twingate access and trusts new
+SSH hosts on first use, rejecting changed host keys.
+
 Convenience helpers:
 
 - `scripts/authenticate_netcup.sh` — authorize through Netcup's OAuth device
   flow and store the refresh token in Azure Key Vault.
+- `scripts/postgres_shell.sh` — choose an application and open `psql` against
+  its production schema using the application's owner role. Pass a schema or
+  app slug (for example, `scripts/postgres_shell.sh training-log`) to skip the
+  menu. Credentials come from the selected application's Azure Key Vault;
+  Grafana alone uses the retained `monitoring/grafana-database` runtime Secret.
+  Requires Azure login and vault-read permissions, a configured Kubernetes
+  context, and Twingate access. `AZURE_KEYVAULT_NAME` selects the environment
+  prefix (default `p07`); `KUBE_CONTEXT_NAME` defaults to that same name.
+  `POSTGRES_NAMESPACE`, `POSTGRES_SERVICE`, `POSTGRES_DATABASE`, and
+  `POSTGRES_LOCAL_PORT` retain their overrides. The loopback-only port-forward
+  and private temporary password file are removed when the shell exits.
 - `scripts/ssh_to_server.sh` — SSH into the Netcup server using the
   stored key/port/user from Key Vault.
 - `scripts/expose_traefik_dashboard.sh` — port-forward the Traefik
