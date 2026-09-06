@@ -388,36 +388,30 @@ module "create_database" {
   k8s_name      = "postgres1"
   k8s_namespace = module.create_database_namespace.k8s_namespace
   db_name       = "postgres1"
-  application_schemas = [
-    "cooking",
-    "expensetracker",
-    "grafana",
-    "hello",
-    "learn_language",
-    "library",
-    "training_log",
-  ]
-  admin_password_active_slot      = "green"
-  admin_password_blue_generation  = null
-  admin_password_green_generation = "initial"
-  role_provisioning_generation    = "initial"
 
   wait_for = module.setup_monitoring_crds.crds_ready
 }
 
 locals {
   owner = data.azurerm_client_config.current.object_id
-  db = {
-    host     = module.create_database.host
-    port     = module.create_database.port
-    database = module.create_database.name
+  database = {
+    host              = module.create_database.host
+    port              = module.create_database.port
+    name              = module.create_database.name
+    jdbc_url          = module.create_database.jdbc_url
+    namespace         = module.create_database.namespace
+    admin_secret_name = module.create_database.admin_secret_name
   }
-  db_credentials = module.create_database.schema_credentials
+  backup_db = {
+    host     = local.database.host
+    port     = local.database.port
+    database = local.database.name
+  }
 }
 
 moved {
   from = module.setup_victoria_metrics.random_password.grafana_db_password
-  to   = module.create_database.random_password.schema_owner["grafana"]
+  to   = module.setup_victoria_metrics.module.postgres_schema.random_password.password
 }
 
 module "register_grafana_dashboard" {
@@ -443,13 +437,7 @@ module "setup_victoria_metrics" {
     connection_url = module.create_redis.connection_url
     password       = module.create_redis.password
   }
-  database = {
-    host     = local.db.host
-    port     = local.db.port
-    name     = local.db.database
-    username = local.db_credentials["grafana"].username
-    password = local.db_credentials["grafana"].password
-  }
+  database           = local.database
   gateway_parent_ref = module.setup_ingress_controller.gateway_parent_ref
   wait_for           = module.setup_ingress_controller.ingress_controller_ready
 }
@@ -486,7 +474,7 @@ module "setup_backup_app" {
   azure_storage_account_name                = "ibari"
 
   dbs_config = [
-    merge(local.db, local.db_credentials["learn_language"], {
+    merge(local.backup_db, module.setup_learn_language_app.database_credentials, {
       name            = "Learn language"
       schema          = "learn_language"
       createPlainDump = true
@@ -502,7 +490,7 @@ module "setup_backup_app" {
         "api_tokens"
       ]
     }),
-    merge(local.db, local.db_credentials["training_log"], {
+    merge(local.backup_db, module.setup_training_log_app.database_credentials, {
       name            = "Training log"
       schema          = "training_log"
       createPlainDump = true
@@ -510,12 +498,12 @@ module "setup_backup_app" {
         "oauth2_authorized_client"
       ]
     }),
-    merge(local.db, local.db_credentials["grafana"], {
+    merge(local.backup_db, module.setup_victoria_metrics.database_credentials, {
       name            = "Grafana"
       schema          = "grafana",
       createPlainDump = true
     }),
-    merge(local.db, local.db_credentials["library"], {
+    merge(local.backup_db, module.setup_library_app.database_credentials, {
       name            = "Library"
       schema          = "library"
       createPlainDump = true,
@@ -525,12 +513,12 @@ module "setup_backup_app" {
         }
       ]
     }),
-    merge(local.db, local.db_credentials["expensetracker"], {
+    merge(local.backup_db, module.setup_expense_tracker_app.database_credentials, {
       name            = "Expense tracker"
       schema          = "expensetracker"
       createPlainDump = true
     }),
-    merge(local.db, local.db_credentials["cooking"], {
+    merge(local.backup_db, module.setup_cooking_app.database_credentials, {
       name            = "Cooking"
       schema          = "cooking"
       createPlainDump = true
@@ -540,7 +528,7 @@ module "setup_backup_app" {
         }
       ]
     }),
-    merge(local.db, local.db_credentials["hello"], {
+    merge(local.backup_db, module.setup_hello_app.database_credentials, {
       name            = "Hello"
       schema          = "hello"
       createPlainDump = true
@@ -565,9 +553,7 @@ module "setup_learn_language_app" {
   tenant_id             = data.azurerm_client_config.current.tenant_id
   k8s_oidc_config       = module.setup_cluster.k8s_oidc_config
   client_log_url        = local.client_log_url
-  db_jdbc_url           = module.create_database.jdbc_url
-  db_username           = local.db_credentials["learn_language"].username
-  db_password           = local.db_credentials["learn_language"].password
+  database              = local.database
   twingate_service_key  = module.setup_twingate_access.service_key
 }
 
@@ -583,9 +569,7 @@ module "setup_hello_app" {
   tenant_id             = data.azurerm_client_config.current.tenant_id
   k8s_oidc_config       = module.setup_cluster.k8s_oidc_config
   client_log_url        = local.client_log_url
-  db_jdbc_url           = module.create_database.jdbc_url
-  db_username           = local.db_credentials["hello"].username
-  db_password           = local.db_credentials["hello"].password
+  database              = local.database
   twingate_service_key  = module.setup_twingate_access.service_key
 }
 
@@ -604,9 +588,7 @@ module "setup_training_log_app" {
   tenant_id              = data.azurerm_client_config.current.tenant_id
   k8s_oidc_config        = module.setup_cluster.k8s_oidc_config
   client_log_url         = local.client_log_url
-  db_jdbc_url            = module.create_database.jdbc_url
-  db_username            = local.db_credentials["training_log"].username
-  db_password            = local.db_credentials["training_log"].password
+  database               = local.database
   twingate_service_key   = module.setup_twingate_access.service_key
 }
 
@@ -631,9 +613,7 @@ module "setup_expense_tracker_app" {
   azure_subscription_id = var.azure_subscription_id
   k8s_oidc_config       = module.setup_cluster.k8s_oidc_config
   client_log_url        = local.client_log_url
-  db_jdbc_url           = module.create_database.jdbc_url
-  db_username           = local.db_credentials["expensetracker"].username
-  db_password           = local.db_credentials["expensetracker"].password
+  database              = local.database
   twingate_service_key  = module.setup_twingate_access.service_key
 }
 
@@ -650,9 +630,7 @@ module "setup_library_app" {
   azure_subscription_id = var.azure_subscription_id
   k8s_oidc_config       = module.setup_cluster.k8s_oidc_config
   client_log_url        = local.client_log_url
-  db_jdbc_url           = module.create_database.jdbc_url
-  db_username           = local.db_credentials["library"].username
-  db_password           = local.db_credentials["library"].password
+  database              = local.database
   twingate_service_key  = module.setup_twingate_access.service_key
 }
 
@@ -670,9 +648,7 @@ module "setup_cooking_app" {
   azure_subscription_id = var.azure_subscription_id
   k8s_oidc_config       = module.setup_cluster.k8s_oidc_config
   client_log_url        = local.client_log_url
-  db_jdbc_url           = module.create_database.jdbc_url
-  db_username           = local.db_credentials["cooking"].username
-  db_password           = local.db_credentials["cooking"].password
+  database              = local.database
   twingate_service_key  = module.setup_twingate_access.service_key
 }
 

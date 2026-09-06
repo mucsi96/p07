@@ -184,25 +184,16 @@ bash scripts/destroy.sh
 
 ### Database role migration
 
-The PostgreSQL module provisions a non-administrator login role for every
-application. Each role owns its same-named schema, and the backup service uses
-that owner credential for schema-scoped backup and restore operations.
+Each database-backed application module provisions its own non-administrator
+login role and same-named schema. The PostgreSQL module only owns the database
+server, while the backup service consumes each application module's schema-owner
+credentials for schema-scoped backup and restore operations.
 
-The first apply of this model transfers existing object ownership and rotates
-the previously shared PostgreSQL bootstrap password. Run it in a maintenance
-window, then immediately redeploy all database-backed applications and the
-backup service so their processes reload the new Key Vault values. Old secret
-versions remain in Key Vault history but can no longer authenticate after the
-bootstrap password rotation.
-
-If PostgreSQL is reinitialized outside Terraform while its Kubernetes Job
-objects remain, change `role_provisioning_generation` on the
-`create_database` module before applying to rerun role provisioning.
-
-Bootstrap password rotation uses alternating `blue` and `green` slots. To
-rotate later, change `admin_password_active_slot` to the inactive slot and
-change that slot's generation value in the same apply. Never switch to an
-inactive slot without regenerating it first.
+The first apply transfers existing object ownership. Run it in a maintenance
+window, then redeploy all database-backed applications and the backup service
+so their processes reload the new Key Vault values. Rotation of the previously
+shared PostgreSQL bootstrap password is intentionally deferred to a separate
+change and rollout plan.
 
 Convenience helpers:
 
