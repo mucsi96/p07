@@ -28,6 +28,7 @@
             kubernetes-helm # helm
             kubectl
             nodejs_22
+            postgresql_18 # psql
             redis # redis-cli
             kubelogin # Azure kubelogin, used by the .kube/oidc-config exec block
             jq
