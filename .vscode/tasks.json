@@ -57,13 +57,15 @@
     {
       "type": "shell",
       "command": "nix",
-      "label": "Start DB proxy",
-      "args": ["develop", "--command", "bash", "scripts/start_db_proxy.sh"],
+      "label": "PostgreSQL shell",
+      "args": ["develop", "--command", "bash", "scripts/postgres_shell.sh"],
       "options": {
         "cwd": "${workspaceFolder}"
       },
       "problemMatcher": [],
-      "isBackground": true
+      "presentation": {
+        "focus": true
+      }
     },
     {
       "type": "shell",

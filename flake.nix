@@ -1,5 +1,5 @@
 {
-  description = "Dev shell for p07 — Hetzner Cloud MicroK8s environment tooling";
+  description = "Dev shell for p07 Netcup k3s environment tooling";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-26.05";
@@ -23,25 +23,20 @@
         default = pkgs.mkShell {
           packages = with pkgs; [
             azure-cli # az
+            curl
             terraform
             kubernetes-helm # helm
             kubectl
             nodejs_22
+            postgresql_18 # psql
             redis # redis-cli
-            kubelogin # Azure kubelogin, used by the .kube/oidc-config exec block
+            kubelogin # Azure kubelogin, used by kubeconfig exec authentication
             jq
+            openssh # ssh-agent, ssh-add
             python3 # seeds .venv — Terraform's ansible provider interpreter (main.tf)
           ];
 
           shellHook = ''
-            # VS Code workspaceFolder equivalent: the project root is where the dev where the dev
-            # shell is entered. Fall back to the git toplevel when entered from
-            # a subdirectory.
-            if [ -z "$KUBECONFIG" ]; then
-              _project_root="$(git rev-parse --show-toplevel 2>/dev/null || pwd)"
-              export KUBECONFIG="$_project_root/.kube/admin-config"
-            fi
-
             if [ ! -d .venv ]; then
               echo "No .venv found — run 'bash scripts/install_dependencies.sh' to seed the"
               echo "Python virtual environment, Ansible collections, and Terraform backend."

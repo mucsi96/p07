@@ -114,6 +114,12 @@
             default = "{{ subscription_id_cmd.stdout }}"
           }
 
+          variable "azure_tenant_id" {
+            description = "The Microsoft Entra tenant ID used for Azure authentication."
+            type    = string
+            default = "{{ tenant_id_cmd.stdout }}"
+          }
+
           variable "storage_account_name" {
             description = "Name of the storage account to hold Terraform state."
             type    = string
