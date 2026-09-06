@@ -409,11 +409,6 @@ locals {
   }
 }
 
-moved {
-  from = module.setup_victoria_metrics.random_password.grafana_db_password
-  to   = module.setup_victoria_metrics.module.postgres_schema.random_password.password
-}
-
 module "register_grafana_dashboard" {
   source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_webapp?ref=v-68"
 

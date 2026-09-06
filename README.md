@@ -182,18 +182,12 @@ bash scripts/pull_kube_admin_config.sh
 bash scripts/destroy.sh
 ```
 
-### Database role migration
+### Database roles
 
 Each database-backed application module provisions its own non-administrator
 login role and same-named schema. The PostgreSQL module only owns the database
 server, while the backup service consumes each application module's schema-owner
 credentials for schema-scoped backup and restore operations.
-
-The first apply transfers existing object ownership. Run it in a maintenance
-window, then redeploy all database-backed applications and the backup service
-so their processes reload the new Key Vault values. Rotation of the previously
-shared PostgreSQL bootstrap password is intentionally deferred to a separate
-change and rollout plan.
 
 Convenience helpers:
 
