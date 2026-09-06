@@ -174,7 +174,7 @@ bash scripts/install_dependencies.sh
 # Plan + apply the environment
 bash scripts/create.sh
 
-# Pull the admin kubeconfig into ./.kube/admin-config
+# Merge the admin config into ~/.kube/config, activate p07, and verify access
 bash scripts/pull_kube_admin_config.sh
 
 # Destroy Terraform-managed resources. This does not cancel the Netcup
@@ -189,7 +189,7 @@ login role and same-named schema. The PostgreSQL module only owns the database
 server, while the backup service consumes each application module's schema-owner
 credentials for schema-scoped backup and restore operations.
 
-Module release `v-70` provisions roles and schemas during Terraform apply over
+Module release `v-71` provisions roles and schemas during Terraform apply over
 the existing operator SSH connection. The database descriptor includes its
 deployment, storage instance ID, and SSH host/port/user. `scripts/create.sh`
 loads the SSH agent; provisioning needs operator Twingate access and trusts new
