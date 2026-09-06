@@ -174,7 +174,7 @@ bash scripts/install_dependencies.sh
 # Plan + apply the environment
 bash scripts/create.sh
 
-# Pull the admin kubeconfig into ./.kube/admin-config
+# Merge the admin config into ~/.kube/config, activate p07, and verify access
 bash scripts/pull_kube_admin_config.sh
 
 # Destroy Terraform-managed resources. This does not cancel the Netcup

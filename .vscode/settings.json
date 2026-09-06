@@ -1,8 +1,0 @@
-{
-    "vs-kubernetes": {
-        "vs-kubernetes.kubeconfig": "${workspaceFolder}/.kube/admin-config"
-    },
-    "terminal.integrated.env.linux": {
-        "KUBECONFIG": "${workspaceFolder}/.kube/admin-config"
-    }
-}
