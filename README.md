@@ -189,7 +189,7 @@ login role and same-named schema. The PostgreSQL module only owns the database
 server, while the backup service consumes each application module's schema-owner
 credentials for schema-scoped backup and restore operations.
 
-Module release `v-70` provisions roles and schemas during Terraform apply over
+Module release `v-71` provisions roles and schemas during Terraform apply over
 the existing operator SSH connection. The database descriptor includes its
 deployment, storage instance ID, and SSH host/port/user. `scripts/create.sh`
 loads the SSH agent; provisioning needs operator Twingate access and trusts new
