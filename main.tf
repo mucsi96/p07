@@ -289,14 +289,14 @@ data "cloudflare_ip_ranges" "cloudflare" {}
 # Created before the server: its connector tokens are baked into the Netcup
 # installation script. No depends_on; it must not order after setup_cluster.
 module "setup_twingate_connector" {
-  source           = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_twingate_connector?ref=v-67"
+  source           = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_twingate_connector?ref=v-68"
   environment_name = var.environment_name
 }
 
 # Needs the server's address/port, so it orders after provision_server
 # via field references. No depends_on (would cycle with ssh_ready_wait_for).
 module "setup_twingate_access" {
-  source            = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_twingate_access?ref=v-67"
+  source            = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_twingate_access?ref=v-68"
   environment_name  = var.environment_name
   remote_network_id = module.setup_twingate_connector.remote_network_id
   k8s_host          = module.provision_server.ipv4_address
@@ -306,7 +306,7 @@ module "setup_twingate_access" {
 }
 
 module "provision_server" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/provision_server?ref=v-67"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/provision_server?ref=v-68"
 
   server_name             = var.environment_name
   netcup_server_id        = tonumber(data.azurerm_key_vault_secret.netcup_server_id.value)
@@ -326,7 +326,7 @@ module "provision_server" {
 }
 
 module "setup_cluster" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_cluster?ref=v-67"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_cluster?ref=v-68"
 
   host                     = module.provision_server.ipv4_address
   ssh_port                 = module.provision_server.ssh_port
@@ -342,18 +342,18 @@ module "setup_cluster" {
 }
 
 module "create_redis_namespace" {
-  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/create_app_namespace?ref=v-67"
+  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/create_app_namespace?ref=v-68"
   k8s_namespace = "redis"
 }
 
 module "create_redis" {
-  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_redis?ref=v-67"
+  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_redis?ref=v-68"
   k8s_name      = "redis"
   k8s_namespace = module.create_redis_namespace.k8s_namespace
 }
 
 module "setup_ingress_controller" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_ingress_controller?ref=v-67"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_ingress_controller?ref=v-68"
 
   dns_zone              = data.azurerm_key_vault_secret.dns_zone.value
   k8s_config            = module.setup_cluster.k8s_config
@@ -372,22 +372,35 @@ module "setup_ingress_controller" {
 }
 
 module "create_database_namespace" {
-  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/create_app_namespace?ref=v-67"
+  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/create_app_namespace?ref=v-68"
   k8s_namespace = "db"
 }
 
 module "setup_monitoring_crds" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_monitoring_crds?ref=v-67"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_monitoring_crds?ref=v-68"
 
   prometheus_operator_crds_chart_version = "28.0.1" #https://github.com/prometheus-community/helm-charts/releases?q=prometheus-operator-crds
   wait_for                               = module.setup_ingress_controller.ingress_controller_ready
 }
 
 module "create_database" {
-  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/create_postgres_database?ref=v-67"
+  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/create_postgres_database?ref=v-68"
   k8s_name      = "postgres1"
   k8s_namespace = module.create_database_namespace.k8s_namespace
   db_name       = "postgres1"
+  application_schemas = [
+    "cooking",
+    "expensetracker",
+    "grafana",
+    "hello",
+    "learn_language",
+    "library",
+    "training_log",
+  ]
+  admin_password_active_slot      = "green"
+  admin_password_blue_generation  = null
+  admin_password_green_generation = "initial"
+  role_provisioning_generation    = "initial"
 
   wait_for = module.setup_monitoring_crds.crds_ready
 }
@@ -398,13 +411,17 @@ locals {
     host     = module.create_database.host
     port     = module.create_database.port
     database = module.create_database.name
-    username = module.create_database.username
-    password = module.create_database.password
   }
+  db_credentials = module.create_database.schema_credentials
+}
+
+moved {
+  from = module.setup_victoria_metrics.random_password.grafana_db_password
+  to   = module.create_database.random_password.schema_owner["grafana"]
 }
 
 module "register_grafana_dashboard" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_webapp?ref=v-67"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_webapp?ref=v-68"
 
   display_name  = "Grafana - ${var.environment_name}"
   owner         = local.owner
@@ -412,7 +429,7 @@ module "register_grafana_dashboard" {
 }
 
 module "setup_victoria_metrics" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_victoria_metrics?ref=v-67"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_victoria_metrics?ref=v-68"
 
   grafana_hostname                         = local.grafana_hostname
   tenant_id                                = data.azurerm_client_config.current.tenant_id
@@ -427,18 +444,18 @@ module "setup_victoria_metrics" {
     password       = module.create_redis.password
   }
   database = {
-    host           = module.create_database.host
-    port           = module.create_database.port
-    name           = module.create_database.name
-    admin_username = module.create_database.username
-    admin_password = module.create_database.password
+    host     = local.db.host
+    port     = local.db.port
+    name     = local.db.database
+    username = local.db_credentials["grafana"].username
+    password = local.db_credentials["grafana"].password
   }
   gateway_parent_ref = module.setup_ingress_controller.gateway_parent_ref
   wait_for           = module.setup_ingress_controller.ingress_controller_ready
 }
 
 module "setup_victoria_logs" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_victoria_logs?ref=v-67"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_victoria_logs?ref=v-68"
 
   alloy_chart_version = "1.8.1" #https://github.com/grafana/helm-charts/releases?q=alloy
   # In-cluster VLSingle API URL owned by the stack module; Alloy pushes both
@@ -453,7 +470,7 @@ module "setup_victoria_logs" {
 }
 
 module "setup_backup_app" {
-  source                = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_backup_app?ref=v-67"
+  source                = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_backup_app?ref=v-68"
   environment_name      = var.environment_name
   azure_location        = var.azure_location
   owner                 = local.owner
@@ -469,7 +486,7 @@ module "setup_backup_app" {
   azure_storage_account_name                = "ibari"
 
   dbs_config = [
-    merge(local.db, {
+    merge(local.db, local.db_credentials["learn_language"], {
       name            = "Learn language"
       schema          = "learn_language"
       createPlainDump = true
@@ -485,7 +502,7 @@ module "setup_backup_app" {
         "api_tokens"
       ]
     }),
-    merge(local.db, {
+    merge(local.db, local.db_credentials["training_log"], {
       name            = "Training log"
       schema          = "training_log"
       createPlainDump = true
@@ -493,12 +510,12 @@ module "setup_backup_app" {
         "oauth2_authorized_client"
       ]
     }),
-    merge(local.db, {
+    merge(local.db, local.db_credentials["grafana"], {
       name            = "Grafana"
       schema          = "grafana",
       createPlainDump = true
     }),
-    merge(local.db, {
+    merge(local.db, local.db_credentials["library"], {
       name            = "Library"
       schema          = "library"
       createPlainDump = true,
@@ -508,12 +525,12 @@ module "setup_backup_app" {
         }
       ]
     }),
-    merge(local.db, {
+    merge(local.db, local.db_credentials["expensetracker"], {
       name            = "Expense tracker"
       schema          = "expensetracker"
       createPlainDump = true
     }),
-    merge(local.db, {
+    merge(local.db, local.db_credentials["cooking"], {
       name            = "Cooking"
       schema          = "cooking"
       createPlainDump = true
@@ -522,12 +539,17 @@ module "setup_backup_app" {
           path = "/app/storage/cooking"
         }
       ]
-    })
+    }),
+    merge(local.db, local.db_credentials["hello"], {
+      name            = "Hello"
+      schema          = "hello"
+      createPlainDump = true
+    }),
   ]
 }
 
 module "setup_learn_language_app" {
-  source                = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_learn_language_app?ref=v-67"
+  source                = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_learn_language_app?ref=v-68"
   environment_name      = var.environment_name
   azure_location        = var.azure_location
   claude_api_key        = data.azurerm_key_vault_secret.learn_language_claude_api_key.value
@@ -544,13 +566,13 @@ module "setup_learn_language_app" {
   k8s_oidc_config       = module.setup_cluster.k8s_oidc_config
   client_log_url        = local.client_log_url
   db_jdbc_url           = module.create_database.jdbc_url
-  db_username           = module.create_database.username
-  db_password           = module.create_database.password
+  db_username           = local.db_credentials["learn_language"].username
+  db_password           = local.db_credentials["learn_language"].password
   twingate_service_key  = module.setup_twingate_access.service_key
 }
 
 module "setup_hello_app" {
-  source                = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_hello_app?ref=v-67"
+  source                = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_hello_app?ref=v-68"
   environment_name      = var.environment_name
   azure_location        = var.azure_location
   claude_api_key        = data.azurerm_key_vault_secret.hello_claude_api_key.value
@@ -562,13 +584,13 @@ module "setup_hello_app" {
   k8s_oidc_config       = module.setup_cluster.k8s_oidc_config
   client_log_url        = local.client_log_url
   db_jdbc_url           = module.create_database.jdbc_url
-  db_username           = module.create_database.username
-  db_password           = module.create_database.password
+  db_username           = local.db_credentials["hello"].username
+  db_password           = local.db_credentials["hello"].password
   twingate_service_key  = module.setup_twingate_access.service_key
 }
 
 module "setup_training_log_app" {
-  source                 = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_training_log_app?ref=v-67"
+  source                 = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_training_log_app?ref=v-68"
   environment_name       = var.environment_name
   azure_location         = var.azure_location
   strava_client_id       = data.azurerm_key_vault_secret.training_log_strava_client_id.value
@@ -583,13 +605,13 @@ module "setup_training_log_app" {
   k8s_oidc_config        = module.setup_cluster.k8s_oidc_config
   client_log_url         = local.client_log_url
   db_jdbc_url            = module.create_database.jdbc_url
-  db_username            = module.create_database.username
-  db_password            = module.create_database.password
+  db_username            = local.db_credentials["training_log"].username
+  db_password            = local.db_credentials["training_log"].password
   twingate_service_key   = module.setup_twingate_access.service_key
 }
 
 module "setup_bank_email_worker" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_bank_email_worker?ref=v-67"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_bank_email_worker?ref=v-68"
 
   cloudflare_zone_id = data.azurerm_key_vault_secret.cloudflare_zone_id.value
   dns_zone           = data.azurerm_key_vault_secret.dns_zone.value
@@ -598,7 +620,7 @@ module "setup_bank_email_worker" {
 }
 
 module "setup_expense_tracker_app" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_expense_tracker_app?ref=v-67"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_expense_tracker_app?ref=v-68"
 
   environment_name      = var.environment_name
   azure_location        = var.azure_location
@@ -610,13 +632,13 @@ module "setup_expense_tracker_app" {
   k8s_oidc_config       = module.setup_cluster.k8s_oidc_config
   client_log_url        = local.client_log_url
   db_jdbc_url           = module.create_database.jdbc_url
-  db_username           = module.create_database.username
-  db_password           = module.create_database.password
+  db_username           = local.db_credentials["expensetracker"].username
+  db_password           = local.db_credentials["expensetracker"].password
   twingate_service_key  = module.setup_twingate_access.service_key
 }
 
 module "setup_library_app" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_library_app?ref=v-67"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_library_app?ref=v-68"
 
   environment_name      = var.environment_name
   azure_location        = var.azure_location
@@ -629,13 +651,13 @@ module "setup_library_app" {
   k8s_oidc_config       = module.setup_cluster.k8s_oidc_config
   client_log_url        = local.client_log_url
   db_jdbc_url           = module.create_database.jdbc_url
-  db_username           = module.create_database.username
-  db_password           = module.create_database.password
+  db_username           = local.db_credentials["library"].username
+  db_password           = local.db_credentials["library"].password
   twingate_service_key  = module.setup_twingate_access.service_key
 }
 
 module "setup_cooking_app" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_cooking_app?ref=v-67"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_cooking_app?ref=v-68"
 
   environment_name      = var.environment_name
   azure_location        = var.azure_location
@@ -649,13 +671,13 @@ module "setup_cooking_app" {
   k8s_oidc_config       = module.setup_cluster.k8s_oidc_config
   client_log_url        = local.client_log_url
   db_jdbc_url           = module.create_database.jdbc_url
-  db_username           = module.create_database.username
-  db_password           = module.create_database.password
+  db_username           = local.db_credentials["cooking"].username
+  db_password           = local.db_credentials["cooking"].password
   twingate_service_key  = module.setup_twingate_access.service_key
 }
 
 # module "setup_party_app" {
-#   source                     = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_party_app?ref=v-67"
+#   source                     = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_party_app?ref=v-68"
 #   environment_name           = var.environment_name
 #   azure_location             = var.azure_location
 #   owner                      = local.owner
