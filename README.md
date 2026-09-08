@@ -215,6 +215,21 @@ Convenience helpers:
 - `scripts/expose_traefik_dashboard.sh` — port-forward the Traefik
   dashboard to `http://localhost:8080/dashboard/`.
 
+### Automated server updates
+
+The `Update server` GitHub Actions workflow runs every day at 01:00 in the
+`Europe/Budapest` timezone, including daylight-saving time changes. It installs
+all available Debian updates (including kernel and security updates), removes
+unused packages, always restarts the server after the update attempt, and
+verifies that the server returns with a new boot ID. A failed package update is
+reported after the reboot has completed.
+
+Run `scripts/create.sh` after adding the workflow. Terraform grants the existing
+GitHub Actions Twingate service account access to the private SSH endpoint and
+populates the repository's `TWINGATE_SERVICE_KEY`, `SERVER_SSH_HOST`,
+`SERVER_SSH_PORT`, `SERVER_SSH_USER`, and `SERVER_SSH_PRIVATE_KEY` Actions
+secrets. The workflow can also be started manually from the Actions tab.
+
 ## Configuration
 
 Netcup identifiers, authentication, and image selection are loaded from Azure

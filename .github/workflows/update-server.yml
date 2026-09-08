@@ -1,0 +1,35 @@
+name: Update server
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 1 * * *'
+      timezone: Europe/Budapest
+
+concurrency:
+  group: update-server
+  cancel-in-progress: false
+
+jobs:
+  update-server:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Connect to Twingate
+        uses: twingate/github-action@v1
+        with:
+          service-key: ${{ secrets.TWINGATE_SERVICE_KEY }}
+
+      - name: Install updates and restart server
+        env:
+          SERVER_SSH_HOST: ${{ secrets.SERVER_SSH_HOST }}
+          SERVER_SSH_PORT: ${{ secrets.SERVER_SSH_PORT }}
+          SERVER_SSH_USER: ${{ secrets.SERVER_SSH_USER }}
+          SERVER_SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_PRIVATE_KEY }}
+        run: bash scripts/update_server.sh
