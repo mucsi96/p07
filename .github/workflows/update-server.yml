@@ -13,23 +13,32 @@ concurrency:
 jobs:
   update-server:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 10
     permissions:
       contents: read
+      id-token: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v6
+
+      - name: Log in to Azure
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
 
       - name: Connect to Twingate
         uses: twingate/github-action@v1
         with:
           service-key: ${{ secrets.TWINGATE_SERVICE_KEY }}
 
-      - name: Install updates and restart server
+      - name: Start server maintenance
         env:
-          SERVER_SSH_HOST: ${{ secrets.SERVER_SSH_HOST }}
-          SERVER_SSH_PORT: ${{ secrets.SERVER_SSH_PORT }}
-          SERVER_SSH_USER: ${{ secrets.SERVER_SSH_USER }}
-          SERVER_SSH_PRIVATE_KEY: ${{ secrets.SERVER_SSH_PRIVATE_KEY }}
-        run: bash scripts/update_server.sh
+          AZURE_CORE_OUTPUT: none
+          AZURE_KEYVAULT_NAME: ${{ secrets.AZURE_KEYVAULT_NAME }}
+          SSH_BATCH_MODE: "yes"
+          SSH_KNOWN_HOSTS_PATH: /tmp/server-known-hosts
+          SSH_STRICT_HOST_KEY_CHECKING: accept-new
+        run: bash scripts/ssh_to_server.sh sudo -n /usr/local/sbin/update-server
