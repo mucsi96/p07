@@ -45,6 +45,8 @@ if [ -z "$ssh_port" ]; then
 fi
 
 ssh_key_path=${SSH_IDENTITY_PATH:-}
+strict_host_key_checking=${SSH_STRICT_HOST_KEY_CHECKING:-ask}
+known_hosts_path=${SSH_KNOWN_HOSTS_PATH:-}
 
 if [ -z "$ssh_key_path" ]; then
   ssh_key_path=$(mktemp)
@@ -54,8 +56,17 @@ fi
 
 chmod 600 "$ssh_key_path"
 
-ssh \
-  -i "$ssh_key_path" \
-  -p "$ssh_port" \
-  "$ssh_user@$ssh_host" \
-  "$@"
+ssh_options=(
+  -o "BatchMode=${SSH_BATCH_MODE:-no}"
+  -o "StrictHostKeyChecking=$strict_host_key_checking"
+  -i "$ssh_key_path"
+  -p "$ssh_port"
+)
+
+if [ -n "$known_hosts_path" ]; then
+  ssh_options+=(-o "UserKnownHostsFile=$known_hosts_path")
+fi
+
+# Arguments intentionally form the remote command after local expansion.
+# shellcheck disable=SC2029
+ssh "${ssh_options[@]}" "$ssh_user@$ssh_host" "$@"
