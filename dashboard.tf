@@ -1,15 +1,14 @@
-variable "dashboard_image" {
-  description = "Immutable Observatory image published by the dashboard workflow (ghcr.io/mucsi96/p07-observatory:sha-<commit>)."
-  type        = string
-}
-
 module "setup_app_dashboard" {
-  # Immutable module commit from k8s-modules PR #136.
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_dashboard?ref=695539012ecf7a8d869252a8dcdb2e86cf81fe65"
+  # Immutable handoff module commit from k8s-modules PR #137.
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_dashboard?ref=4604c44193263a6cd3f4ba284053bb9ca8544720"
 
-  environment_name = var.environment_name
-  hostname         = "apps.${data.azurerm_key_vault_secret.dns_zone.value}"
-  image            = var.dashboard_image
+  environment_name        = var.environment_name
+  hostname                = "apps.${data.azurerm_key_vault_secret.dns_zone.value}"
+  github_repository       = "observatory-app"
+  github_repository_owner = "mucsi96"
+  azure_subscription_id   = var.azure_subscription_id
+  kubeconfig_secret_id    = azurerm_key_vault_secret.k8s_oidc_config.resource_versionless_id
+  twingate_service_key    = module.setup_twingate_access.service_key
   apps = [
     module.setup_hello_app.dashboard_app,
     module.setup_learn_language_app.dashboard_app,

@@ -28,7 +28,6 @@
             kubernetes-helm # helm
             kubectl
             nodejs_22
-            go # dependency-free Observatory dashboard
             postgresql_18 # psql
             redis # redis-cli
             kubelogin # Azure kubelogin, used by kubeconfig exec authentication

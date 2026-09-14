@@ -13,15 +13,29 @@ Terraform state, secrets, and the OIDC discovery document live in Azure
 
 ## Application dashboard
 
-**Observatory** lives in [`apps/dashboard`](apps/dashboard/README.md): a Go and
+**Observatory** lives in its own repository,
+[mucsi96/observatory-app](https://github.com/mucsi96/observatory-app): a Go and
 vanilla JavaScript dashboard for application health, deployed versions, deployment
-jobs, open MRs/PRs with check statuses, and issue counts. It is provisioned by
-`dashboard.tf` at `https://apps.<dns-zone>` behind Entra OIDC.
+jobs, open MRs/PRs with check statuses, and issue counts. `dashboard.tf` provisions
+its inventory, credentials, read-only collector access, GitHub deploy identity,
+Entra OIDC proxy and route at `https://apps.<dns-zone>`.
 
-Publish its image with the `Observatory` workflow and set `TF_VAR_dashboard_image`
-to the resulting immutable image before planning/applying. The app modules and
-dashboard are pinned to the module commit introducing the new inventory outputs;
-see the dashboard README for setup and release instructions.
+The app's `Pipeline` workflow publishes and deploys its own image and Kubernetes
+Deployment/Service. p07 no longer owns application source, image pins, or build
+workflows. The GitHub deploy identity reads only `k8s-oidc-config` from the platform
+vault and receives workload access in the `observatory` namespace.
+
+For the extraction from release `v-87`, apply the updated dashboard module first
+(Terraform 1.7+). Its `removed` blocks release the existing Deployment and Service
+from Terraform state **without deleting them**. Then run the standalone app's
+pipeline manually to adopt the resources and deploy the new image. Existing OIDC,
+URL, configuration and runtime access retain their resource addresses.
+
+The dashboard module pins the immutable commit from
+[k8s-modules PR #137](https://github.com/mucsi96/k8s-modules/pull/137), so a sibling
+checkout is not required. All other modules use `v-87`. Merge the module PR first;
+after its release is published, align the module references to that release.
+Rerun the app pipeline after inventory/token changes to reload them.
 
 ## Modules used
 

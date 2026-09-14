@@ -42,6 +42,8 @@ if [ -n "$vault_name" ] && command -v az >/dev/null 2>&1; then
     # any resource whose status does NOT contain "Auth expires" needs re-auth.
     if command -v twingate >/dev/null 2>&1; then
       while IFS= read -r resource_name; do
+        # The CLI pads resource names to align its table columns.
+        resource_name="${resource_name%"${resource_name##*[![:space:]]}"}"
         [ -z "$resource_name" ] && continue
         echo "Twingate resource \"$resource_name\" is not authenticated — triggering auth…"
         twingate auth "$resource_name"
