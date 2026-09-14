@@ -490,7 +490,7 @@ module "setup_victoria_logs" {
 }
 
 module "setup_backup_app" {
-  source                = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_backup_app?ref=v-86"
+  source                = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_backup_app?ref=695539012ecf7a8d869252a8dcdb2e86cf81fe65"
   environment_name      = var.environment_name
   azure_location        = var.azure_location
   owner                 = local.owner
@@ -569,7 +569,7 @@ module "setup_backup_app" {
 }
 
 module "setup_learn_language_app" {
-  source                = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_learn_language_app?ref=v-86"
+  source                = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_learn_language_app?ref=695539012ecf7a8d869252a8dcdb2e86cf81fe65"
   environment_name      = var.environment_name
   azure_location        = var.azure_location
   claude_api_key        = data.azurerm_key_vault_secret.learn_language_claude_api_key.value
@@ -590,7 +590,7 @@ module "setup_learn_language_app" {
 }
 
 module "setup_hello_app" {
-  source                = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_hello_app?ref=v-86"
+  source                = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_hello_app?ref=695539012ecf7a8d869252a8dcdb2e86cf81fe65"
   environment_name      = var.environment_name
   azure_location        = var.azure_location
   claude_api_key        = data.azurerm_key_vault_secret.hello_claude_api_key.value
@@ -606,7 +606,7 @@ module "setup_hello_app" {
 }
 
 module "setup_training_log_app" {
-  source                 = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_training_log_app?ref=v-86"
+  source                 = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_training_log_app?ref=695539012ecf7a8d869252a8dcdb2e86cf81fe65"
   environment_name       = var.environment_name
   azure_location         = var.azure_location
   strava_client_id       = data.azurerm_key_vault_secret.training_log_strava_client_id.value
@@ -634,7 +634,7 @@ module "setup_bank_email_worker" {
 }
 
 module "setup_expense_tracker_app" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_expense_tracker_app?ref=v-86"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_expense_tracker_app?ref=695539012ecf7a8d869252a8dcdb2e86cf81fe65"
 
   environment_name      = var.environment_name
   azure_location        = var.azure_location
@@ -650,7 +650,7 @@ module "setup_expense_tracker_app" {
 }
 
 module "setup_library_app" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_library_app?ref=v-86"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_library_app?ref=695539012ecf7a8d869252a8dcdb2e86cf81fe65"
 
   environment_name      = var.environment_name
   azure_location        = var.azure_location
@@ -667,7 +667,7 @@ module "setup_library_app" {
 }
 
 module "setup_cooking_app" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_cooking_app?ref=v-86"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_cooking_app?ref=695539012ecf7a8d869252a8dcdb2e86cf81fe65"
 
   environment_name      = var.environment_name
   azure_location        = var.azure_location
