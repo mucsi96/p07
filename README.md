@@ -31,10 +31,11 @@ from Terraform state **without deleting them**. Then run the standalone app's
 pipeline manually to adopt the resources and deploy the new image. Existing OIDC,
 URL, configuration and runtime access retain their resource addresses.
 
-The dashboard module pins the immutable commit from
-[k8s-modules PR #137](https://github.com/mucsi96/k8s-modules/pull/137), so a sibling
-checkout is not required. All other modules use `v-87`. Merge the module PR first;
-after its release is published, align the module references to that release.
+All modules use published release `v-88`, which includes the standalone
+Observatory handoff. A sibling modules checkout is not required.
+The Terraform GitHub token (`github-token` in Key Vault) needs repository
+**Variables: Read and write** access in addition to its existing permissions,
+so the module can manage `DEPLOY_ENABLED` in `observatory-app`.
 Rerun the app pipeline after inventory/token changes to reload them.
 
 ## Modules used

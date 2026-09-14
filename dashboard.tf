@@ -1,6 +1,5 @@
 module "setup_app_dashboard" {
-  # Immutable handoff module commit from k8s-modules PR #137.
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_dashboard?ref=4604c44193263a6cd3f4ba284053bb9ca8544720"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_dashboard?ref=v-88"
 
   environment_name        = var.environment_name
   hostname                = "apps.${data.azurerm_key_vault_secret.dns_zone.value}"
