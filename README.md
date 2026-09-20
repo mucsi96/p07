@@ -14,29 +14,52 @@ Terraform state, secrets, and the OIDC discovery document live in Azure
 ## Application dashboard
 
 **Observatory** lives in its own repository,
-[mucsi96/observatory-app](https://github.com/mucsi96/observatory-app): a Go and
-vanilla JavaScript dashboard for application health, deployed versions, deployment
+[mucsi96/observatory-app](https://github.com/mucsi96/observatory-app): a Gin/GORM and
+Angular Material dashboard for application health, deployed versions, deployment
 jobs, open MRs/PRs with check statuses, and issue counts. `dashboard.tf` provisions
-its inventory, credentials, read-only collector access, GitHub deploy identity,
-Entra OIDC proxy and route at `https://apps.<dns-zone>`.
+its inventory, PostgreSQL schema/credentials, read-only collector access, GitHub
+deploy identity, Entra SPA/API registrations and ingress NetworkPolicy.
+Like skeleton-app, the UI uses OIDC authorization code + PKCE and sends a bearer
+JWT to the API. The API validates the token and requires `api-access` and the
+`readApps` role (assigned to the owner by default). Observatory has no OIDC proxy.
 
-The app's `Pipeline` workflow publishes and deploys its own image and Kubernetes
-Deployment/Service. p07 no longer owns application source, image pins, or build
+The app's `Pipeline` publishes separate server/client images and deploys
+`mucsi96/go-app` **1.0.0** and `mucsi96/client-app` **22.0.0**. Their HTTPRoutes
+serve `/api` and `/` at `https://apps.<dns-zone>`; the Go chart uses a separate
+management listener on port 8082. p07 does not own image pins or build
 workflows. The GitHub deploy identity reads only `k8s-oidc-config` from the platform
-vault and receives workload access in the `observatory` namespace.
+vault and receives namespace-scoped permissions for Helm/chart resources in
+`observatory`. The deploy script converts Terraform-owned source configuration
+and credentials into chart-owned config/env Secrets, triggering checksum rollouts.
 
-For the extraction from release `v-87`, apply the updated dashboard module first
-(Terraform 1.7+). Its `removed` blocks release the existing Deployment and Service
-from Terraform state **without deleting them**. Then run the standalone app's
-pipeline manually to adopt the resources and deploy the new image. Existing OIDC,
-URL, configuration and runtime access retain their resource addresses.
+The module's `removed` blocks preserve the existing Deployment, Service and
+ServiceAccount for Helm adoption. Its old HTTPRoute is removed in favor of the
+two chart-owned routes.
 
-All modules use published release `v-88`, which includes the standalone
-Observatory handoff. A sibling modules checkout is not required.
+Platform modules use published release `v-88`, which includes the standalone
+Observatory handoff. The dashboard module pins the direct-JWT/Helm revision
+`b7bb0cd8ed82e1896bf3a309f8a5f587b2cd2cae` from `k8s-modules` so a sibling
+checkout is not required. Run `terraform init` to fetch the pinned module.
 The Terraform GitHub token (`github-token` in Key Vault) needs repository
 **Variables: Read and write** access in addition to its existing permissions,
 so the module can manage `DEPLOY_ENABLED` in `observatory-app`.
 Rerun the app pipeline after inventory/token changes to reload them.
+
+### Observatory direct-JWT and Helm migration
+
+For an existing installation, publish both new images, then provision the new
+registrations, ConfigMap, database and deployment role, keeping the proxy boundary in
+place during the rollout:
+
+```bash
+terraform init
+terraform apply -target=module.setup_app_dashboard.kubernetes_config_map_v1.dashboard -target=module.setup_app_dashboard.kubernetes_secret_v1.database -target=module.setup_app_dashboard.kubernetes_role_v1.deploy -target=module.setup_app_dashboard.setup_observatory_api -target=module.setup_app_dashboard.setup_observatory_spa
+```
+
+Then run Observatory's pipeline, which adopts the existing resources with Helm
+and installs the Angular client. Verify API token enforcement. Finally, run the
+normal plan/apply to update the NetworkPolicy and remove the old route, proxy and
+webapp registration. Fresh environments can apply the full module first.
 
 ## Modules used
 
