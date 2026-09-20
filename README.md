@@ -14,14 +14,17 @@ Terraform state, secrets, and the OIDC discovery document live in Azure
 ## Application dashboard
 
 **Observatory** lives in its own repository,
-[mucsi96/observatory-app](https://github.com/mucsi96/observatory-app): a Gin/GORM and
+[mucsi96/observatory-app](https://github.com/mucsi96/observatory-app): a Go/Gin and
 Angular Material dashboard for application health, deployed versions, deployment
 jobs, open MRs/PRs with check statuses, and issue counts. `dashboard.tf` provisions
-its inventory, PostgreSQL schema/credentials, read-only collector access, GitHub
+its inventory, read-only collector access, GitHub
 deploy identity, Entra SPA/API registrations and ingress NetworkPolicy.
 Like skeleton-app, the UI uses OIDC authorization code + PKCE and sends a bearer
 JWT to the API. The API validates the token and requires `api-access` and the
 `readApps` role (assigned to the owner by default). Observatory has no OIDC proxy.
+It uses the same `register_api`/`register_spa` modules and
+`observatory-api-workload-identity` naming convention as the other apps.
+Fleet snapshots are cached in memory and rebuilt after restarts.
 
 The app's `Pipeline` publishes separate server/client images and deploys
 `mucsi96/go-app` **1.0.0** and `mucsi96/client-app` **22.0.0**. Their HTTPRoutes
@@ -33,12 +36,12 @@ vault and receives namespace-scoped permissions for Helm/chart resources in
 and credentials into chart-owned config/env Secrets, triggering checksum rollouts.
 
 The module's `removed` blocks preserve the existing Deployment, Service and
-ServiceAccount for Helm adoption. Its old HTTPRoute is removed in favor of the
+legacy ServiceAccount during migration. Its old HTTPRoute is removed in favor of the
 two chart-owned routes.
 
 Platform modules use published release `v-88`, which includes the standalone
 Observatory handoff. The dashboard module pins the direct-JWT/Helm revision
-`b7bb0cd8ed82e1896bf3a309f8a5f587b2cd2cae` from `k8s-modules` so a sibling
+`4dd25c137fb284c95336b0d16bbc273854274e5e` from `k8s-modules` so a sibling
 checkout is not required. Run `terraform init` to fetch the pinned module.
 The Terraform GitHub token (`github-token` in Key Vault) needs repository
 **Variables: Read and write** access in addition to its existing permissions,
@@ -48,12 +51,12 @@ Rerun the app pipeline after inventory/token changes to reload them.
 ### Observatory direct-JWT and Helm migration
 
 For an existing installation, publish both new images, then provision the new
-registrations, ConfigMap, database and deployment role, keeping the proxy boundary in
+registrations, ConfigMap and deployment/collector RBAC, keeping the proxy boundary in
 place during the rollout:
 
 ```bash
 terraform init
-terraform apply -target=module.setup_app_dashboard.kubernetes_config_map_v1.dashboard -target=module.setup_app_dashboard.kubernetes_secret_v1.database -target=module.setup_app_dashboard.kubernetes_role_v1.deploy -target=module.setup_app_dashboard.setup_observatory_api -target=module.setup_app_dashboard.setup_observatory_spa
+terraform apply -target=module.setup_app_dashboard.kubernetes_config_map_v1.dashboard -target=module.setup_app_dashboard.kubernetes_role_v1.deploy -target=module.setup_app_dashboard.kubernetes_role_binding_v1.reader -target=module.setup_app_dashboard.setup_observatory_api -target=module.setup_app_dashboard.setup_observatory_spa
 ```
 
 Then run Observatory's pipeline, which adopts the existing resources with Helm

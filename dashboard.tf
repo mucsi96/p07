@@ -1,6 +1,6 @@
 module "setup_app_dashboard" {
   # Pin the direct-JWT/Helm module revision; v-88 still provisions the proxy.
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_dashboard?ref=b7bb0cd8ed82e1896bf3a309f8a5f587b2cd2cae"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_dashboard?ref=4dd25c137fb284c95336b0d16bbc273854274e5e"
 
   environment_name        = var.environment_name
   hostname                = "apps.${data.azurerm_key_vault_secret.dns_zone.value}"
@@ -21,7 +21,6 @@ module "setup_app_dashboard" {
   github_token                 = data.azurerm_key_vault_secret.github_token.value
   owner                        = local.owner
   tenant_id                    = data.azurerm_client_config.current.tenant_id
-  database                     = local.database
   client_log_url               = local.client_log_url
   k8s_oidc_issuer_url          = module.setup_cluster.oidc_issuer_url
   ingress_controller_namespace = module.setup_ingress_controller.ingress_controller_namespace
