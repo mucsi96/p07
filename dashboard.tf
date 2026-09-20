@@ -1,5 +1,6 @@
 module "setup_app_dashboard" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_dashboard?ref=v-88"
+  # Pin the direct-JWT/Helm module revision; v-88 still provisions the proxy.
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_dashboard?ref=4dd25c137fb284c95336b0d16bbc273854274e5e"
 
   environment_name        = var.environment_name
   hostname                = "apps.${data.azurerm_key_vault_secret.dns_zone.value}"
@@ -17,18 +18,13 @@ module "setup_app_dashboard" {
     module.setup_cooking_app.dashboard_app,
     module.setup_backup_app.dashboard_app,
   ]
-  github_token               = data.azurerm_key_vault_secret.github_token.value
-  owner                      = local.owner
-  tenant_id                  = data.azurerm_client_config.current.tenant_id
-  valid_email                = data.azurerm_key_vault_secret.letsencrypt_email.value
-  oauth2_proxy_chart_version = local.oauth2_proxy_chart_version
-  oauth2_proxy_image_version = local.oauth2_proxy_image_version
-  session_redis = {
-    connection_url = module.create_redis.connection_url
-    password       = module.create_redis.password
-  }
-  gateway_parent_ref = module.setup_ingress_controller.gateway_parent_ref
-  wait_for           = module.setup_ingress_controller.ingress_controller_ready
+  github_token                 = data.azurerm_key_vault_secret.github_token.value
+  owner                        = local.owner
+  tenant_id                    = data.azurerm_client_config.current.tenant_id
+  client_log_url               = local.client_log_url
+  k8s_oidc_issuer_url          = module.setup_cluster.oidc_issuer_url
+  ingress_controller_namespace = module.setup_ingress_controller.ingress_controller_namespace
+  wait_for                     = module.setup_ingress_controller.ingress_controller_ready
 }
 
 output "dashboard_url" {
