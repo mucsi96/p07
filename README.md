@@ -2,6 +2,13 @@
 
 Netcup based Kubernetes environment instance.
 
+## Code review and maintenance automation
+
+The fleet uses subscription-backed native Codex GitHub reviews and ChatGPT/Codex
+scheduled maintenance tasks. See [the migration inventory](docs/codex-migration.md)
+for repository coverage, activation status, and the skeleton-sync and Terraform-update
+schedules. Account-side activation is required in addition to these repository files.
+
 This repository wires together reusable Terraform modules from
 [mucsi96/k8s-modules](https://github.com/mucsi96/k8s-modules) to provision a
 single-node k3s cluster on an existing Netcup RS 1000 G12 running Debian 13,
