@@ -1,5 +1,5 @@
 module "setup_app_dashboard" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_dashboard?ref=v-88"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_dashboard?ref=a2f571d0ff9e064bbf3b2c953e67434622bf2277"
 
   environment_name        = var.environment_name
   hostname                = "apps.${data.azurerm_key_vault_secret.dns_zone.value}"
