@@ -51,12 +51,17 @@ Rerun the app pipeline after inventory/token changes to reload them.
 
 ## Application image publishing
 
-All active applications follow Observatory's GHCR publishing pattern. The
+All active applications use GHCR with Observatory's registry authentication. The
 `skeleton-app` (Hello), `learn-language`, `training-log-pro`, `expense-tracker`,
 `library-app`, `cooking-app`, and `postgres-azure-backup` pipelines publish
-`ghcr.io/mucsi96/<repository>-server:sha-<full commit SHA>` and the corresponding
-`-client` image with `GITHUB_TOKEN`. Deployments receive the exact image pair
-from that pipeline run, rather than discovering the newest Docker Hub tag.
+`ghcr.io/mucsi96/<repository>-server:<version>` and the corresponding `-client`
+image with `GITHUB_TOKEN`, only when that component's
+`get_next_version.outputs.hasNextVersion` is `true`. Image tags use the number
+from `get_next_version.outputs.version`. Unchanged components retain the version
+of their last reachable release tag. Deployments receive both resolved image
+references, rather than discovering the newest Docker Hub tag. Production
+Dockerfile source labels trigger the first numbered GHCR publications through
+normal component version detection.
 
 Merge the application publishing/deploy MRs first. After the first publication,
 make both GHCR packages for each application public and rerun its deploy job so
