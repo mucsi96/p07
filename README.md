@@ -38,8 +38,12 @@ from Terraform state **without deleting them**. Then run the standalone app's
 pipeline manually to adopt the resources and deploy the new image. Existing OIDC,
 URL, configuration and runtime access retain their resource addresses.
 
-All modules use published release `v-88`, which includes the standalone
-Observatory handoff. A sibling modules checkout is not required.
+All modules pin the published revision `a2f571d0ff9e064bbf3b2c953e67434622bf2277`
+from [the Docker Hub cleanup MR](https://github.com/mucsi96/k8s-modules/pull/140).
+It removes Docker Hub publishing credentials and retains the standalone
+Observatory handoff. The immutable revision makes the coordinated upgrade
+independent of release-tag ordering. Merge the modules cleanup before this
+environment upgrade. A sibling modules checkout is not required.
 The Terraform GitHub token (`github-token` in Key Vault) needs repository
 **Variables: Read and write** access in addition to its existing permissions,
 so the module can manage `DEPLOY_ENABLED` in `observatory-app`.
