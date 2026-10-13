@@ -49,32 +49,6 @@ The Terraform GitHub token (`github-token` in Key Vault) needs repository
 so the module can manage `DEPLOY_ENABLED` in `observatory-app`.
 Rerun the app pipeline after inventory/token changes to reload them.
 
-## Application image publishing
-
-All active applications use GHCR with Observatory's registry authentication. The
-`skeleton-app` (Hello), `learn-language`, `training-log-pro`, `expense-tracker`,
-`library-app`, `cooking-app`, and `postgres-azure-backup` pipelines publish
-`ghcr.io/mucsi96/<repository>-server:<version>` and the corresponding `-client`
-image with `GITHUB_TOKEN`, only when that component's
-`get_next_version.outputs.hasNextVersion` is `true`. Image tags use the number
-from `get_next_version.outputs.version`, which is always populated: unchanged
-components receive the version of their last reachable release tag. Deployment
-jobs use that action output directly to build both image
-references, rather than discovering the newest Docker Hub tag. Production
-Dockerfile source labels trigger the first numbered GHCR publications through
-normal component version detection.
-
-Merge [get-next-version#6](https://github.com/mucsi96/get-next-version/pull/6)
-first, followed by the application publishing/deploy MRs. After the first publication,
-make both GHCR packages for each application public and rerun its deploy job so
-the cluster can pull anonymously. Then merge the modules cleanup and this
-environment upgrade. The next operator-run Terraform
-plan/apply removes `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`, and each app's managed
-Docker Hub access token. Keep the operator's Docker Hub login available for
-that one-time token revocation. Terraform can still install the Docker provider
-for resources referenced by existing state; fresh environments have no Docker
-Hub provider or credential requirement.
-
 ## Modules used
 
 | Module | Purpose |
