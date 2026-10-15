@@ -1,10 +1,9 @@
 # Copy as forwardauth_override.tf ONLY after main.tf pins a published k8s-modules
-# release containing setup_app_forwardauth and enable_forward_auth. Replace the
-# chart version with its real published version. Terraform merges *_override.tf
+# release containing setup_app_forwardauth and enable_forward_auth. That module
+# pins published ForwardAuth chart 1.0.0. Terraform merges *_override.tf
 # blocks with the existing module calls; existing resource addresses are retained.
 locals {
   forwardauth_pilot = {
-    chart_version        = "REPLACE_WITH_PUBLISHED_CHART_VERSION"
     retain_spa_redirects = true # Preprovision; switch to false after app cutover.
     trusted_proxy_cidrs  = ["10.42.0.0/16"]
     session_redis = {

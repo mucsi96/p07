@@ -18,6 +18,12 @@ The existing Grafana/Observatory routes are outside this pilot.
 
 ## Publication and provisioning order
 
+Chart publication completed on 2026-10-15: ForwardAuth **1.0.0**, client-app
+**23.0.0**, spring-app **31.0.0**, go-app **2.0.0** and rust-app **1.0.0** are
+published. The shared ForwardAuth module pins 1.0.0 centrally; its caller input
+does not contain a chart-version placeholder. The module release/p07 ref update
+and operator provisioning still follow review.
+
 1. Publish the chart changes through the chart repository's release workflow.
    Record the actual published `oauth2-proxy-forwardauth`, `client-app`,
    `spring-app` and `go-app` versions. The wrapper builds its locked upstream
@@ -26,8 +32,8 @@ The existing Grafana/Observatory routes are outside this pilot.
    module refs to that release; retain any independently pinned Observatory
    handoff until that separate migration is reconciled. This implementation does
    not fabricate a release tag or replace published refs with sibling paths.
-3. Adapt [the pilot override example](forwardauth-pilot.tf.example), supplying
-   the real chart version. The example can be copied as
+3. Adapt [the pilot override example](forwardauth-pilot.tf.example). The
+   module already pins the published chart. The example can be copied as
    `forwardauth_override.tf`, merging into the existing module calls. Keep
    `retain_spa_redirects = true` for preprovisioning.
 4. Review the environment plan. The existing Web-client conversion retains the
