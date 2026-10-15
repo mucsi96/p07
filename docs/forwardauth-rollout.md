@@ -6,7 +6,7 @@ The reusable implementation spans three platform/application boundaries:
   dependency, exact OAuth HTTPRoute, standard document/API filter policies and
   Redis sessions. Existing app charts now accept generic `routeFilters`.
 - `k8s-modules/modules/setup_app_forwardauth`: platform-owned per-app chart release,
-  persisted cookie/client/Redis Secrets, checksum rollouts and app ingress policies.
+  persisted cookie/client/Redis Secrets and checksum rollouts.
   Hello/Cooking opt in with `forward_auth`; existing callers remain unchanged.
 - `skeleton-app` and `cooking-app`: browser OAuth libraries/interceptors removed,
   token-free `/oauth2/userinfo`, local logout, popup reauthentication preserving
@@ -51,8 +51,8 @@ and operator provisioning still follow review.
    two-release route/client cutover, not a zero-downtime guarantee for old tabs.
 6. Verify owner-only Hello, household Cooking, API roles, Origin rejection,
    renewal after idle, cookie clearing and popup reauthentication. Check the
-   real Gateway HTTPRoute status and NetworkPolicy behavior. The automated
-   tests use real containers and a confidential OIDC fixture, not real Entra.
+   real Gateway HTTPRoute status and the chart-owned proxy NetworkPolicy. The
+   automated tests use real containers and a confidential OIDC fixture, not real Entra.
 7. Set `retain_spa_redirects = false` and provision the final cleanup. This removes
    the SPA redirect type from the same application objects, leaving confidential
    Web clients. Their display names become Hello Web / Cooking Web. The legacy
@@ -101,10 +101,9 @@ the browser has only a host-local HttpOnly cookie. Each app has its own persiste
 cookie secret/name and confidential client, while Redis is shared.
 
 The default `__Host-<release>` cookie is Secure, HttpOnly and SameSite=Lax.
-The proxy NetworkPolicy admits Traefik from `kube-system`; app policies retain
-monitoring access on management ports. Supply trusted source CIDRs matching the
-actual Traefik connection source. Refresh defaults to five minutes and must stay
-below the access-token lifetime.
+The chart-owned proxy NetworkPolicy admits Traefik from `kube-system`. Supply
+trusted source CIDRs matching the actual Traefik connection source. Refresh
+defaults to five minutes and must stay below the access-token lifetime.
 
 Unsafe browser requests require exactly the configured `BROWSER_ORIGIN`, even
 though Traefik injects a bearer header. CORS/SameSite/login-flow CSRF checks do not
@@ -150,8 +149,7 @@ Checks include:
 - `python3 scripts/check_forwardauth.py` in the chart repo: all token modes,
   public-route isolation, Secrets, rejected incomplete configuration, and
   unchanged legacy app routing with optional filters.
-- `terraform validate` / mocked-provider, plan-only `terraform test` in
-  `register_spa` and `setup_app_forwardauth`; Hello/Cooking modules validate too.
+- `terraform fmt -check` and `terraform validate` for the shared and pilot modules.
 - Both Angular production builds, Hello's GraalVM native test image, Cooking's
   production Go image, Go build/vet, and shell syntax checks.
 - Playwright against isolated actual app/PostgreSQL/AI/Redis/OIDC/Traefik pods:

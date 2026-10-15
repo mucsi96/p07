@@ -201,9 +201,9 @@ disabled, and Traefik requires it for Middleware HTTPRoute ExtensionRefs. Keep
 the Gateway API provider enabled. Extend the application route templates with
 standard `routeFilters`; the default empty list preserves existing routes.
 
-Restrict proxy ingress to Traefik. Protect app ingress as appropriate, including
-all services trusting identity headers, while retaining management/scrape
-access. The existing chart release/deployment ownership must remain explicit.
+The upstream chart restricts proxy ingress to Traefik. The pilot APIs retain
+their JWT, scope, role and Origin checks. The existing chart release/deployment
+ownership remains explicit.
 
 Preserve specific non-browser contracts with more-specific platform routes:
 
