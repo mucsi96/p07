@@ -5,6 +5,8 @@ Investigation: 2026-10-15.
 The chart, shared modules and Hello/Cooking pilot are now implemented locally.
 See [implementation and staged rollout](forwardauth-rollout.md) for the
 publication handoff and SPA-redirect cleanup; the environment is not activated.
+The implementation now uses standard HTTPRoute header filters and only two
+Traefik ForwardAuth resources; see the rollout guide's standard API support notes.
 
 ## Recommendation
 
@@ -28,6 +30,7 @@ charts/oauth2_proxy_forwardauth/
   values.schema.json
   templates/
     middleware.yaml
+    route-filters.yaml         # ConfigMap with standard HTTPRoute filter policies
     oauth-route.yaml
   README.md
 ```
@@ -185,8 +188,8 @@ contracts and must not require a browser Origin.
 | Owner | Responsibility |
 | --- | --- |
 | `p07` / `k8s-modules` | Web registrations, API consent, assignments, persisted credentials, per-app auth chart release, shared Redis configuration, platform route exceptions |
-| Auth chart | Stock proxy dependency, proxy access policy, named middleware chains and exact public OAuth routes |
-| App charts | Attach same-namespace Middleware ExtensionRefs to their existing frontend/API HTTPRoutes |
+| Auth chart | Stock proxy dependency, proxy access policy, standard filter policies, two ForwardAuth resources and exact public OAuth routes |
+| App charts | Render generic HTTPRoute `routeFilters` supplied from the auth release's non-secret ConfigMap |
 | App repositories | Cookie-based browser auth integration, user-info/logout UX, Origin/CSRF protection and app integration tests |
 
 Keep the auth release Terraform-owned, matching the existing platform proxy
@@ -196,7 +199,7 @@ and no additional `traefik.io` write permissions just to reference middleware.
 Enable `providers.kubernetesCRD` in `setup_ingress_controller`: it is currently
 disabled, and Traefik requires it for Middleware HTTPRoute ExtensionRefs. Keep
 the Gateway API provider enabled. Extend the application route templates with
-same-namespace middleware references; their current templates have no filters.
+standard `routeFilters`; the default empty list preserves existing routes.
 
 Restrict proxy ingress to Traefik. Protect app ingress as appropriate, including
 all services trusting identity headers, while retaining management/scrape

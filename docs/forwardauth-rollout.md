@@ -3,8 +3,8 @@
 The reusable implementation spans three platform/application boundaries:
 
 - `k8s-helm-charts/charts/oauth2_proxy_forwardauth`: pinned upstream oauth2-proxy
-  dependency, exact OAuth HTTPRoute, document/API middleware chains and Redis
-  sessions. Existing app charts now accept same-namespace `routeMiddlewares`.
+  dependency, exact OAuth HTTPRoute, standard document/API filter policies and
+  Redis sessions. Existing app charts now accept generic `routeFilters`.
 - `k8s-modules/modules/setup_app_forwardauth`: platform-owned per-app chart release,
   persisted cookie/client/Redis Secrets, checksum rollouts and app ingress policies.
   Hello/Cooking opt in with `forward_auth`; existing callers remain unchanged.
@@ -38,8 +38,10 @@ The existing Grafana/Observatory routes are outside this pilot.
    creates the auth releases and enables the Traefik CRD provider.
 5. Deploy the pilot server/client builds together. Their scripts require the
    corresponding auth Helm release and middleware-capable app charts before
-   deploying. They set `BROWSER_ORIGIN=https://<app-host>` and attach
-   `<app>-oauth2-proxy-api` / `<app>-oauth2-proxy-document`. This is a coordinated
+   deploying. They set `BROWSER_ORIGIN=https://<app-host>` and read document/API
+   JSON filter policies from `<app>-oauth2-proxy-route-filters`. The policies use
+   standard request/response header modifiers and one ForwardAuth ExtensionRef.
+   Missing or malformed policies fail the deployment preflight. This is a coordinated
    two-release route/client cutover, not a zero-downtime guarantee for old tabs.
 6. Verify owner-only Hello, household Cooking, API roles, Origin rejection,
    renewal after idle, cookie clearing and popup reauthentication. Check the
@@ -56,6 +58,27 @@ No Terraform apply/destroy or live routing change was run while implementing
 this work. App/module/chart publication and the operator rollout are still needed.
 
 ## Runtime contract
+
+### Standard routing and the remaining authentication extension
+
+The implementation uses standard Gateway API `Gateway` / `HTTPRoute` resources.
+Header stripping and cache controls use inline `RequestHeaderModifier` and
+`ResponseHeaderModifier` filters. OAuth and machine routes have no Traefik
+ExtensionRef. Only the document/API authenticators use two ForwardAuth
+Middleware resources; custom Headers/Chain resources are not created.
+
+Checked 2026-10-15: Gateway API's latest release is v1.6.3; `ExternalAuth`
+([GEP-1494](https://gateway-api.sigs.k8s.io/geps/gep-1494/)) is experimental.
+p07 runs Traefik v3.7.13 with Gateway API v1.6.1 standard-channel CRDs, whose
+filter enum does not include it. Latest Traefik v3.7.14 also lacks the filter in
+its [implementation](https://github.com/traefik/traefik/blob/v3.7.14/pkg/provider/kubernetes/gateway/httproute.go#L406-L479).
+Upgrading the CRDs alone cannot provide controller support. A fully
+implementation-neutral auth call needs a controller implementing ExternalAuth
+and verification of stock oauth2-proxy success/cookie semantics.
+
+Application deploy jobs consume a non-secret filter ConfigMap owned by the auth
+Helm release. This centralizes the ordered policies without duplicating JSON in
+each app repo or granting the deploy job new auth-secret requirements.
 
 Only exact `/oauth2/start`, `/oauth2/callback`, `/oauth2/sign_in`,
 `/oauth2/sign_out` and `/oauth2/userinfo` routes reach the public proxy handler.
