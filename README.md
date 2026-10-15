@@ -45,6 +45,15 @@ The Terraform GitHub token (`github-token` in Key Vault) needs repository
 so the module can manage `DEPLOY_ENABLED` in `observatory-app`.
 Rerun the app pipeline after inventory/token changes to reload them.
 
+## Stock ForwardAuth pilot
+
+The Hello/Cooking pilot implementation and staged publication/provisioning order
+are documented in [the ForwardAuth rollout guide](docs/forwardauth-rollout.md).
+Its chart/module releases must be published before changing the environment's
+explicit module refs or enabling the [pilot override](docs/forwardauth-pilot.tf.example).
+The pilot replaces browser OAuth with per-app stock oauth2-proxy sessions while
+preserving API JWT roles, household access and workload identities.
+
 ## Modules used
 
 | Module | Purpose |
