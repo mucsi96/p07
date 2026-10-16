@@ -4,25 +4,31 @@ The reusable implementation spans three platform/application boundaries:
 
 - `k8s-helm-charts/charts/oauth2_proxy_forwardauth`: pinned upstream oauth2-proxy
   dependency, exact OAuth HTTPRoute, standard document/API filter policies and
-  Redis sessions. Existing app charts now accept generic `routeFilters`.
+  Redis sessions. Its shared bootstrap adapter translates the proxy's native
+  redirects for configurable exact GET paths. App charts accept `routeFilters`.
 - `k8s-modules/modules/setup_app_forwardauth`: platform-owned per-app chart release,
-  persisted cookie/client/Redis Secrets and checksum rollouts.
+  persisted cookie/client/Redis Secrets, bootstrap/excluded route values and checksum rollouts.
+  The consumed deployment configuration is published to app Azure Key Vaults.
   Hello/Cooking opt in with `forward_auth`; existing callers remain unchanged.
-- `skeleton-app` and `cooking-app`: browser OAuth libraries/interceptors removed,
-  token-free `/oauth2/userinfo`, local logout, popup reauthentication preserving
-  mounted forms, and backend exact-Origin protection. JWT audience/scope/role
-  validation remains authoritative.
+- `skeleton-app` and `cooking-app`: auth-free frontend code with a generic
+  config-or-redirect loader and plain environment controllers. Session checks and
+  redirect translation live in the shared adapter. JWT audience/scope/role and
+  exact-Origin validation remain authoritative on APIs.
 
 The stock proxy is used per app; the Rust BFF is not a deployment dependency.
 The existing Grafana/Observatory routes are outside this pilot.
+The shared module also supports email-header mode for Grafana and login-gate
+mode for other protected services, without requiring an application API registration.
 
 ## Publication and provisioning order
 
-Chart publication completed on 2026-10-15: ForwardAuth **1.0.0**, client-app
+Published charts: ForwardAuth **4.0.0**, client-app
 **23.0.0**, spring-app **31.0.0**, go-app **2.0.0** and rust-app **1.0.0** are
-published. The shared ForwardAuth module pins 1.0.0 centrally; its caller input
-does not contain a chart-version placeholder. The module release/p07 ref update
-and operator provisioning still follow review.
+published. Module release **v-89** still pins ForwardAuth **2.0.0** centrally.
+The shared bootstrap adapter is not in 4.0.0: publish its chart first, then pin
+that verified release in the module alongside the public-frontend/AKV changes.
+These publications must precede the corresponding app cutover. Keep p07 module
+refs explicit and published; the operator rollout is paused for review.
 
 1. Publish the chart changes through the chart repository's release workflow.
    Record the actual published `oauth2-proxy-forwardauth`, `client-app`,
@@ -44,15 +50,25 @@ and operator provisioning still follow review.
    creates the auth releases and enables the Traefik CRD provider.
 5. Deploy the pilot server/client builds together. Their scripts require the
    corresponding auth Helm release and middleware-capable app charts before
-   deploying. They set `BROWSER_ORIGIN=https://<app-host>` and read document/API
-   JSON filter policies from `<app>-oauth2-proxy-route-filters`. The policies use
-   standard request/response header modifiers and one ForwardAuth ExtensionRef.
+   deploying. They set `BROWSER_ORIGIN=https://<app-host>` and read the
+   `forward-auth-config` JSON from the app's Azure Key Vault. Terraform publishes
+   only the release name and API filters, with per-secret deploy read access.
+   The auth chart receives `bootstrapRoutes` targeting each backend's environment
+   path. Backend handlers need no session-check/login URL variables; frontend
+   code knows no OAuth endpoint names.
+   Only the API receives auth filters; client chart values are reset so previous
+   frontend auth filters are removed. The policies use standard request/response
+   header modifiers and one ForwardAuth ExtensionRef.
    Missing or malformed policies fail the deployment preflight. This is a coordinated
    two-release route/client cutover, not a zero-downtime guarantee for old tabs.
+   Existing API-mode installations using document filters must remove those
+   frontend references before upgrading the auth chart. Provision the adapter
+   routes before deploying clients that require config-or-redirect loading.
 6. Verify owner-only Hello, household Cooking, API roles, Origin rejection,
-   renewal after idle, cookie clearing and popup reauthentication. Check the
-   real Gateway HTTPRoute status and the chart-owned proxy NetworkPolicy. The
-   automated tests use real containers and a confidential OIDC fixture, not real Entra.
+   renewal after idle and automatic bootstrap redirects after a missing session.
+   Check real Gateway HTTPRoute status, anonymous static frontend access and
+   absence of frontend auth controls. The automated tests use real containers and a
+   confidential OIDC fixture, not real Entra.
 7. Set `retain_spa_redirects = false` and provision the final cleanup. This removes
    the SPA redirect type from the same application objects, leaving confidential
    Web clients. Their display names become Hello Web / Cooking Web. The legacy
@@ -70,8 +86,9 @@ this work. App/module/chart publication and the operator rollout are still neede
 The implementation uses standard Gateway API `Gateway` / `HTTPRoute` resources.
 Header stripping and cache controls use inline `RequestHeaderModifier` and
 `ResponseHeaderModifier` filters. OAuth and machine routes have no Traefik
-ExtensionRef. Only the document/API authenticators use two ForwardAuth
-Middleware resources; custom Headers/Chain resources are not created.
+ExtensionRef. API-token mode needs one API ForwardAuth Middleware. Email-header
+and login-gate modes also provide document authentication for protected service
+UIs such as Grafana; custom Headers/Chain resources are not created.
 
 Checked 2026-10-15: Gateway API's latest release is v1.6.3; `ExternalAuth`
 ([GEP-1494](https://gateway-api.sigs.k8s.io/geps/gep-1494/)) is experimental.
@@ -82,15 +99,42 @@ Upgrading the CRDs alone cannot provide controller support. A fully
 implementation-neutral auth call needs a controller implementing ExternalAuth
 and verification of stock oauth2-proxy success/cookie semantics.
 
-Application deploy jobs consume a non-secret filter ConfigMap owned by the auth
-Helm release. This centralizes the ordered policies without duplicating JSON in
-each app repo or granting the deploy job new auth-secret requirements.
+The auth Helm release owns a non-secret policy ConfigMap. Terraform reads it and
+exports one consumed `deployment_config` object, then `setup_app_base` writes
+`forward-auth-config` to the app Key Vault. Deploy jobs read its `release_name`
+and `route_filters.api`. Terraform-managed services consume the document/API
+policies directly. The former unused middleware/ConfigMap-name outputs are removed.
 
-Only exact `/oauth2/start`, `/oauth2/callback`, `/oauth2/sign_in`,
-`/oauth2/sign_out` and `/oauth2/userinfo` routes reach the public proxy handler.
+Static frontend HTML, bundles and SPA routes have no authentication filters or
+Angular route guards. Configurable `bootstrapRoutes` send exact GET paths to the
+shared adapter; Hello/Cooking use `/api/environment`. Before Angular starts, the
+adapter calls the proxy's private interactive `/` handler with the session cookie,
+HTML Accept header and validated return target. On success it fetches configuration
+from the configured same-namespace backend. It translates the proxy's native HTTP
+redirect to HTTP 200 JSON `redirectTo`, preserves all session/CSRF cookies and
+discards token-bearing response headers. App controllers return configuration only.
+The frontend loader follows that generic directive; there is no auth service,
+auth interceptor, auth route guard, login/logout UI or popup flow. A read-only
+profile resource loads token-free userinfo for the header context menu.
+External return targets are rejected. Other browser APIs remain session-protected.
+For storage-hosted assets, edge routing must continue to send `/api` and
+`/oauth2` to the cluster. Storage does not forward those paths itself.
+
+Every mode publishes exact `/oauth2/start`, `/oauth2/callback`, `/oauth2/sign_in`,
+`/oauth2/sign_out` and `/oauth2/userinfo` routes. The SPA uses userinfo for header
+display data; login and session decisions remain server-side.
 `/oauth2/auth` and the static-202 root remain private ForwardAuth targets.
 Authentication responses can contain an API access token; do not expose those
 handlers through a broad `/oauth2/` public route.
+
+These are stock proxy endpoints. The adapter relays the proxy's login decision;
+oauth2-proxy owns the authorization URL, nonce and PKCE state. `/oauth2/start`
+initiates login and `/oauth2/sign_in` is the stock login/error page. Entra redirects to
+`/oauth2/callback`, registered by Terraform. The auth chart's exact HTTPRoute
+forwards those requests to the proxy. The stock sign-out endpoint stays available,
+while the SPA has no sign-out control. Sign-out clears only the local proxy session.
+The proxy renews sessions; a new page load re-enters bootstrap after a lost or
+unrenewable session, without frontend session handling.
 
 APIs receive the app's `api://<api-client>/api-access` access token. The Graph
 `User.Read` scope and ID-token forwarding flags are not used for that contract.
@@ -101,9 +145,9 @@ the browser has only a host-local HttpOnly cookie. Each app has its own persiste
 cookie secret/name and confidential client, while Redis is shared.
 
 The default `__Host-<release>` cookie is Secure, HttpOnly and SameSite=Lax.
-The chart-owned proxy NetworkPolicy admits Traefik from `kube-system`. Supply
-trusted source CIDRs matching the actual Traefik connection source. Refresh
-defaults to five minutes and must stay below the access-token lifetime.
+Supply trusted source CIDRs matching the actual Traefik connection source for
+forwarded client-IP metadata. Refresh defaults to five minutes and must stay
+below the access-token lifetime.
 
 Unsafe browser requests require exactly the configured `BROWSER_ORIGIN`, even
 though Traefik injects a bearer header. CORS/SameSite/login-flow CSRF checks do not
@@ -119,7 +163,8 @@ POST /api/integrations/recipes/import
 Authorization: Bearer <Cooking API access token>
 ```
 
-The request body is unchanged. The platform-owned route matches that exact
+The request body is unchanged. `excludedRoutes`, unlike `bootstrapRoutes`, skips
+the browser session check. Its platform-owned route matches that exact
 path and POST method, bypasses browser ForwardAuth and retains the caller's
 Authorization header. The Go handler requires the normal API issuer, audience,
 `api-access` and `createRecipe` role; a browser cookie alone is insufficient.
@@ -147,14 +192,27 @@ continue browsing through the gateway origin.
 Checks include:
 
 - `python3 scripts/check_forwardauth.py` in the chart repo: all token modes,
-  public-route isolation, Secrets, rejected incomplete configuration, and
+  configurable bootstrap paths/backends, public-route isolation, Secrets,
+  rejected incomplete/overlapping configuration, and
   unchanged legacy app routing with optional filters.
+- `python3 -B -m unittest discover -s scripts -p 'test_bootstrap_adapter.py'`:
+  verified identity forwarding, cookie/redirect transport, safe return targets,
+  all three modes, denials/outages and fixed backend selection.
 - `terraform fmt -check` and `terraform validate` for the shared and pilot modules.
 - Both Angular production builds, Hello's GraalVM native test image, Cooking's
   production Go image, Go build/vet, and shell syntax checks.
 - Playwright against isolated actual app/PostgreSQL/AI/Redis/OIDC/Traefik pods:
-  login, token-free browser identity, private/household access, API roles,
-  mutation Origin rejection, renewal, logout and preserved recipe drafts.
+  18 Hello + 37 Cooking tests passed, covering public HTML/assets, automatic
+  bootstrap redirects, safe deep-link restoration, forged-session rejection,
+  private/household access, API roles, mutation Origin rejection, server renewal,
+  token-free header profile data, stock sign-out, and automatic recovery on the
+  next page load.
+- Email-header and login-gate browser flows against stock proxy/Redis/Traefik and
+  a protected service fixture, with no API registration, passed login, header
+  spoof rejection and logout checks.
 
 The local validation runner used distinct pod names/images and removed only its
 own pods; existing development pods were not replaced.
+The app test pods use adapter source extracted from the released chart, not an
+app-owned copy. `BOOTSTRAP_ADAPTER_CHART_VERSION` selects a release;
+`BOOTSTRAP_ADAPTER_CHART_DIR` explicitly selects a local chart for development.

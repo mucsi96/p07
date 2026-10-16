@@ -5,8 +5,10 @@ Investigation: 2026-10-15.
 The chart, shared modules and Hello/Cooking pilot are now implemented locally.
 See [implementation and staged rollout](forwardauth-rollout.md) for the
 publication handoff and SPA-redirect cleanup; the environment is not activated.
-The implementation now uses standard HTTPRoute header filters and only two
-Traefik ForwardAuth resources; see the rollout guide's standard API support notes.
+The updated implementation keeps static app frontends public, uses API-only
+ForwardAuth for them and publishes deploy configuration through Azure Key Vault.
+Email-header/login-gate modes retain document authentication for services such
+as Grafana; see the rollout guide for the current integration contract.
 
 ## Recommendation
 
@@ -17,7 +19,7 @@ workload identity.
 
 A new chart is useful for packaging the platform integration, but is not a
 technical requirement. The upstream `oauth2-proxy` chart already supports
-`gatewayApi`, `networkPolicy`, existing credential/Redis Secrets and templated
+`gatewayApi`, existing credential/Redis Secrets and templated
 `extraObjects`. Rendering those features together was verified.
 
 Recommended chart location in `k8s-helm-charts`:
@@ -28,16 +30,19 @@ charts/oauth2_proxy_forwardauth/
   Chart.lock
   values.yaml
   values.schema.json
+  files/bootstrap_adapter.py  # shared config-or-redirect transport
   templates/
     middleware.yaml
     route-filters.yaml         # ConfigMap with standard HTTPRoute filter policies
     oauth-route.yaml
+    bootstrap-adapter.yaml     # optional workload and exact GET routes
+    excluded-routes.yaml       # separately authenticated direct routes
   README.md
 ```
 
 Use the upstream chart as a pinned dependency for its Deployment, Service,
-configuration, probes and proxy NetworkPolicy. Keep our chart focused on the
-Middleware and public OAuth routing contract. Pin upstream chart `10.4.3` /
+configuration and probes. Keep our chart focused on the
+Middleware, shared bootstrap and public OAuth routing contract. Pin upstream chart `10.4.3` /
 image `v7.15.2` as the investigated baseline; evaluate upgrades separately.
 The chart should support API-token, email-header and login-gate modes.
 
@@ -61,12 +66,19 @@ separate authentication request; it does not reduce request count relative to
 the current direct bearer-token APIs. Keep `forwardBody: false` so uploads and
 streams do not pass through the auth service.
 
-Provide two middleware entry points:
+Use these authentication entry points where applicable:
 
 | Target | Proxy endpoint | Unauthenticated behavior |
 | --- | --- | --- |
-| Frontend/document routes | `/`, with a static `202` upstream | Start login; JSON-accepting requests can receive `401` |
+| Protected service UI routes, e.g. Grafana | `/`, with a static `202` upstream | Start login; JSON-accepting requests can receive `401` |
 | API routes | `/oauth2/auth` | `401` without a login redirect; authorization can return `403` |
+| Configurable bootstrap GETs | Shared adapter calls private `/` with HTML Accept | Proxy's native redirect becomes generic JSON plus its CSRF/session cookies |
+
+Our static SPA routes have no authentication middleware or frontend auth code.
+The chart's configurable `bootstrapRoutes` send environment GETs to its shared
+adapter, which returns authenticated backend configuration or a proxy-selected
+bootstrap redirect. App environment handlers remain plain configuration endpoints.
+The generic loader follows the directive before Angular starts.
 
 The static response must not point back to the application's public hostname.
 The proxy is an authentication service, not a second application router.
@@ -123,13 +135,15 @@ session state; removing the entire Cookie header would break those contracts.
 
 ## Public OAuth endpoints
 
-Publish only the control/identity paths needed by the client:
+For API apps, publish the control paths needed by the server-driven flow:
 
 - `/oauth2/start`
 - `/oauth2/callback`
 - `/oauth2/sign_in`
-- `/oauth2/sign_out`
-- `/oauth2/userinfo`
+
+All modes also expose the stock `/oauth2/sign_out` and `/oauth2/userinfo`
+handlers. The SPA reads token-free userinfo for its header context menu, without
+OAuth/session logic or a logout control.
 
 Use exact HTTPRoute matches, rather than forwarding all of `/oauth2/` to the
 proxy. A successful `/oauth2/auth` response carries the API access token in its
@@ -137,11 +151,15 @@ headers under the proposed configuration. Exposing that handler directly would
 make those credentials browser-readable. The internal static-202 endpoint
 must also have no public route to the proxy.
 
-`/oauth2/userinfo` supplies token-free identity for the frontend. Clients must
-use stock endpoint names and response fields, rather than the custom BFF's
-`/oauth2/session` and `POST /oauth2/logout` interface. Local sign-out uses
-`/oauth2/sign_out`; it clears that app's session, not the Entra SSO session.
-Navigating straight back to a protected document can immediately start login.
+The shared adapter calls the proxy's private interactive `/` handler, using the
+cookie, HTML Accept header and validated return target. It fetches configuration
+from the configured backend only after authentication, or translates the proxy's
+native redirect to JSON while preserving all cookie updates. oauth2-proxy owns
+authorization URLs, nonce and PKCE state. Token-bearing response headers are
+discarded. A plain HTTP redirect inside `fetch()` cannot navigate the page, so
+bootstrap returns an explicit generic `redirectTo` directive.
+The SPA has no OAuth/session handling, sign-in/out controls or popup logic;
+userinfo is consumed only as read-only profile data.
 
 ## Sessions and access policies
 
@@ -187,10 +205,10 @@ contracts and must not require a browser Origin.
 
 | Owner | Responsibility |
 | --- | --- |
-| `p07` / `k8s-modules` | Web registrations, API consent, assignments, persisted credentials, per-app auth chart release, shared Redis configuration, platform route exceptions |
-| Auth chart | Stock proxy dependency, proxy access policy, standard filter policies, two ForwardAuth resources and exact public OAuth routes |
-| App charts | Render generic HTTPRoute `routeFilters` supplied from the auth release's non-secret ConfigMap |
-| App repositories | Cookie-based browser auth integration, user-info/logout UX, Origin/CSRF protection and app integration tests |
+| `p07` / `k8s-modules` | Web registrations, API consent, assignments, persisted credentials, auth releases, AKV deployment config/read scopes, shared Redis and platform route exceptions |
+| Auth chart | Stock proxy dependency, standard filter policies, mode-specific ForwardAuth resources, shared adapter with configurable bootstrap GET paths, exact public OAuth and excluded routes |
+| App charts | Render API `routeFilters` read from AKV by deploy.sh; static frontend routes stay public |
+| App repositories | Plain configuration handlers, generic config-or-redirect loader, API Origin/CSRF protection and app integration tests |
 
 Keep the auth release Terraform-owned, matching the existing platform proxy
 ownership. App deploy jobs then need no access to client/cookie/Redis secrets
@@ -201,9 +219,8 @@ disabled, and Traefik requires it for Middleware HTTPRoute ExtensionRefs. Keep
 the Gateway API provider enabled. Extend the application route templates with
 standard `routeFilters`; the default empty list preserves existing routes.
 
-The upstream chart restricts proxy ingress to Traefik. The pilot APIs retain
-their JWT, scope, role and Origin checks. The existing chart release/deployment
-ownership remains explicit.
+The pilot APIs retain their JWT, scope, role and Origin checks. The existing
+chart release/deployment ownership remains explicit.
 
 Preserve specific non-browser contracts with more-specific platform routes:
 
@@ -232,8 +249,7 @@ port adapted for the shared-pod test network.
 
 Verified:
 
-- Upstream chart rendering of exact OAuth HTTPRoutes, Middleware extraObjects
-  and NetworkPolicies.
+- Upstream chart rendering of exact OAuth HTTPRoutes and Middleware extraObjects.
 - Browser login with S256 PKCE and return to the original path/query.
 - Secure, HttpOnly, host-local session cookies.
 - API `401` without redirects and successful app-specific access-token forwarding.
@@ -246,7 +262,7 @@ Verified:
 - The missing mutation Origin check, including a real sibling-origin form POST.
 
 This verifies the stock ForwardAuth contract and chart rendering. Kubernetes
-Gateway/Middleware resource acceptance, NetworkPolicy enforcement, real Entra
+Gateway/Middleware resource acceptance, real Entra
 consent/assignment/renewal, and the real applications' integrations remain pilot
 verification. It is not a latency or memory benchmark. No live registrations or
 routes were changed.
