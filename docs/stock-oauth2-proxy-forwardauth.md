@@ -30,19 +30,17 @@ charts/oauth2_proxy_forwardauth/
   Chart.lock
   values.yaml
   values.schema.json
-  files/bootstrap_adapter.py  # shared config-or-redirect transport
   templates/
     middleware.yaml
     route-filters.yaml         # ConfigMap with standard HTTPRoute filter policies
     oauth-route.yaml
-    bootstrap-adapter.yaml     # optional workload and exact GET routes
     excluded-routes.yaml       # separately authenticated direct routes
   README.md
 ```
 
 Use the upstream chart as a pinned dependency for its Deployment, Service,
 configuration and probes. Keep our chart focused on the
-Middleware, shared bootstrap and public OAuth routing contract. Pin upstream chart `10.4.3` /
+Middleware and public OAuth routing contract. Pin upstream chart `10.4.3` /
 image `v7.15.2` as the investigated baseline; evaluate upgrades separately.
 The chart should support API-token, email-header and login-gate modes.
 
@@ -72,13 +70,12 @@ Use these authentication entry points where applicable:
 | --- | --- | --- |
 | Protected service UI routes, e.g. Grafana | `/`, with a static `202` upstream | Start login; JSON-accepting requests can receive `401` |
 | API routes | `/oauth2/auth` | `401` without a login redirect; authorization can return `403` |
-| Configurable bootstrap GETs | Shared adapter calls private `/` with HTML Accept | Proxy's native redirect becomes generic JSON plus its CSRF/session cookies |
 
 Our static SPA routes have no authentication middleware or frontend auth code.
-The chart's configurable `bootstrapRoutes` send environment GETs to its shared
-adapter, which returns authenticated backend configuration or a proxy-selected
-bootstrap redirect. App environment handlers remain plain configuration endpoints.
-The generic loader follows the directive before Angular starts.
+The chart's `excludedRoutes` sends environment GETs to the existing app backend.
+The environment controller checks the proxy session and returns configuration
+or a server-selected bootstrap redirect. The generic loader follows that directive
+before Angular starts.
 
 The static response must not point back to the application's public hostname.
 The proxy is an authentication service, not a second application router.
@@ -151,12 +148,10 @@ headers under the proposed configuration. Exposing that handler directly would
 make those credentials browser-readable. The internal static-202 endpoint
 must also have no public route to the proxy.
 
-The shared adapter calls the proxy's private interactive `/` handler, using the
-cookie, HTML Accept header and validated return target. It fetches configuration
-from the configured backend only after authentication, or translates the proxy's
-native redirect to JSON while preserving all cookie updates. oauth2-proxy owns
-authorization URLs, nonce and PKCE state. Token-bearing response headers are
-discarded. A plain HTTP redirect inside `fetch()` cannot navigate the page, so
+The environment controller checks the proxy's internal `/oauth2/auth` endpoint,
+relays cookie updates without token-bearing headers, and selects a public
+`/oauth2/start` redirect when needed. The proxy owns authorization URLs, nonce and
+PKCE state. A plain HTTP redirect inside `fetch()` cannot navigate the page, so
 bootstrap returns an explicit generic `redirectTo` directive.
 The SPA has no OAuth/session handling, sign-in/out controls or popup logic;
 userinfo is consumed only as read-only profile data.
@@ -206,9 +201,9 @@ contracts and must not require a browser Origin.
 | Owner | Responsibility |
 | --- | --- |
 | `p07` / `k8s-modules` | Web registrations, API consent, assignments, persisted credentials, auth releases, AKV deployment config/read scopes, shared Redis and platform route exceptions |
-| Auth chart | Stock proxy dependency, standard filter policies, mode-specific ForwardAuth resources, shared adapter with configurable bootstrap GET paths, exact public OAuth and excluded routes |
+| Auth chart | Stock proxy dependency, standard filter policies, mode-specific ForwardAuth resources, exact public OAuth and excluded routes |
 | App charts | Render API `routeFilters` read from AKV by deploy.sh; static frontend routes stay public |
-| App repositories | Plain configuration handlers, generic config-or-redirect loader, API Origin/CSRF protection and app integration tests |
+| App repositories | Server-driven config-or-redirect bootstrap, generic frontend loader, API Origin/CSRF protection and app integration tests |
 
 Keep the auth release Terraform-owned, matching the existing platform proxy
 ownership. App deploy jobs then need no access to client/cookie/Redis secrets

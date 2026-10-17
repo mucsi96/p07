@@ -1,6 +1,6 @@
 # Copy as forwardauth_override.tf ONLY after main.tf pins a published k8s-modules
-# release containing shared bootstrap adapter integration and enable_forward_auth.
-# That module must pin a published adapter-capable chart (not 4.0.0 or earlier).
+# release containing public-frontend/AKV bootstrap integration and enable_forward_auth.
+# That module centrally pins published ForwardAuth chart 4.0.0.
 # Terraform merges *_override.tf
 # blocks with the existing module calls; existing resource addresses are retained.
 locals {
