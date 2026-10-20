@@ -39,8 +39,10 @@ The module's `removed` blocks preserve the existing Deployment, Service and
 legacy ServiceAccount during migration. Its old HTTPRoute is removed in favor of the
 two chart-owned routes.
 
-Platform modules use published release `v-88`, which includes the standalone
-Observatory handoff. The dashboard module pins the direct-JWT/Helm revision
+Platform modules and Hello use published release `v-92`, with dedicated Web
+registration and ForwardAuth chart 5.0.0. Cooking temporarily uses `v-91` to retain
+SPA redirect coexistence until its cookie-auth app cutover; it also gets chart 5.0.0.
+The dashboard module pins the direct-JWT/Helm revision
 `4dd25c137fb284c95336b0d16bbc273854274e5e` from `k8s-modules` so a sibling
 checkout is not required. Run `terraform init` to fetch the pinned module.
 The Terraform GitHub token (`github-token` in Key Vault) needs repository
@@ -63,6 +65,15 @@ Then run Observatory's pipeline, which adopts the existing resources with Helm
 and installs the Angular client. Verify API token enforcement. Finally, run the
 normal plan/apply to update the NetworkPolicy and remove the old route, proxy and
 webapp registration. Fresh environments can apply the full module first.
+
+## Stock ForwardAuth pilot
+
+The applied chart-5 session-auth foundation and the pending client-owned hosting
+cutover are recorded in [the rollout status](docs/ui-auth-rollout-status.md).
+The current architecture and migration guide is
+[Skeleton issue #105](https://github.com/mucsi96/skeleton-app/issues/105).
+Keep module refs published and explicit; provision the new routing/configuration
+model only after the coordinated chart, module and app releases are ready.
 
 ## Modules used
 

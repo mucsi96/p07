@@ -22,6 +22,7 @@ done
 az account show --output none
 
 device_response=$(curl --fail-with-body --silent --show-error \
+  --connect-timeout 10 --max-time 30 --retry 3 --retry-delay 2 \
   --request POST "$DEVICE_AUTH_URL" \
   --data-urlencode "client_id=$CLIENT_ID" \
   --data-urlencode 'scope=offline_access openid')
@@ -34,17 +35,22 @@ interval=$(jq -er '(.interval // 5) | numbers | floor' <<<"$device_response")
 deadline=$(($(date +%s) + expires_in))
 
 printf 'Open this URL and approve access to Netcup SCP:\n%s\n' "$verification_url"
+printf 'This authorization request expires in %s seconds.\n' "$expires_in"
 if [[ -n "$user_code" && "$verification_url" != *"$user_code"* ]]; then
   printf 'Enter code: %s\n' "$user_code"
 fi
 
 while (( $(date +%s) < deadline )); do
   sleep "$interval"
-  token_response=$(curl --silent --show-error \
+  if ! token_response=$(curl --silent --show-error \
+    --connect-timeout 10 --max-time 30 \
     --request POST "$TOKEN_URL" \
     --data-urlencode 'grant_type=urn:ietf:params:oauth:grant-type:device_code' \
     --data-urlencode "client_id=$CLIENT_ID" \
-    --data-urlencode "device_code=$device_code")
+    --data-urlencode "device_code=$device_code"); then
+    echo "Netcup token polling connection failed; retrying while authorization is valid." >&2
+    continue
+  fi
   error=$(jq -er '.error // ""' <<<"$token_response")
 
   case "$error" in
