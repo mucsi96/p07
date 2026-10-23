@@ -12,7 +12,26 @@ configuration validation and the review plan succeeded. The plan preserves
 database/storage and server resources, and moves Observatory's shared Graph
 principal from the SPA address to the Web address. Deletions are limited to the
 old app-specific SPA resources and obsolete platform-vault deploy permission.
-The create-script execution and post-apply validation are in progress.
+`scripts/create.sh` completed successfully: **24 added, 7 changed, 5 destroyed**.
+Live validation confirmed:
+
+- Observatory proxy chart 6.0.0 is deployed and ready; Cooking's three deployments
+  are also ready.
+- Observatory OAuth and three-host Faro routes report Accepted/ResolvedRefs.
+- Both app vaults contain the expected `.auth` descriptors and same-origin inline
+  runtime configuration.
+- Observatory has namespace-scoped Helm/Middleware permissions and its collector
+  binding targets `observatory-api-workload-identity`.
+- The shared Microsoft Graph principal still exists after its state move.
+- Observatory `/oauth2/start` returns 302 and a same-origin Faro POST returns 202.
+
+Observatory `/` still returns 404: this infrastructure operation does not deploy
+the pending application MR #20 or its chart-owned document/API routes. Cooking
+MR #29 likewise remains the app-level cutover. Post-apply planning succeeded and
+found only the expected Netcup refresh-token secret rotation (one update), with
+no remaining application/platform resource changes. That validation plan was not
+applied. Cooking's PVC remains Bound to `cooking-app`; no HTTPRoute reported a
+failed Accepted or ResolvedRefs condition.
 
 ## Application migration follow-up — 23 October 2026
 
