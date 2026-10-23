@@ -1,5 +1,46 @@
 # UI authentication rollout status — 20 October 2026
 
+## Applied infrastructure — 23 October 2026
+
+The operator explicitly authorized infrastructure-first rollout with temporary
+application downtime and recreation of app-specific Entra resources. The full
+`scripts/create.sh` was run from this branch after Docker authentication.
+
+Before applying, Cooking's Microsoft Graph service-principal state entry was
+moved from `module.setup_cooking_app.module.setup_cooking_spa.azuread_service_principal.msgraph`
+to `module.setup_cooking_app.module.setup_cooking_web[0].azuread_service_principal.msgraph`.
+Both refer to the same shared principal; it was preserved, not recreated.
+
+The first apply performed the infrastructure changes but returned errors for
+three already-removed Entra objects. A refreshed script rerun completed successfully
+(0 added, 2 changed, 1 destroyed). Post-apply planning found only the expected
+Netcup refresh-token secret rotation (0 added, 1 changed, 0 destroyed); that saved
+plan was applied to persist the refreshed token. No server provisioning changes
+or database/storage deletions were present in the reviewed plan.
+
+Verified live:
+
+- Both per-app proxies are deployed at chart **6.0.0**, with one ready replica.
+- Traefik is ready at its observed desired generation with rewritebody **v0.3.1**.
+- Both app deploy roles can manage Middleware; both vaults publish the new `.auth`
+  descriptor. Hello's separate inline runtime configuration is present.
+- The two-host same-origin Faro HTTPRoute is accepted with resolved references.
+- The shared Microsoft Graph service principal still exists.
+
+Application rollout is **not complete**. Hello still runs client-app 23.0.0 and
+spring-app 31.0.0; its API HTTPRoute references the now-removed
+`hello-oauth2-proxy-api` middleware. Cooking still runs client-app 22.0.0 and
+go-app 1.0.0 with no app-owned auth middleware. Ready pods do not mean these old
+apps work with the new infrastructure. Deploy the updated app MRs next.
+
+The inherited Observatory infrastructure migration was also applied: its old
+proxy and Terraform-owned route were removed and its direct-JWT registrations
+and deployment configuration provisioned. Its matching app rollout remains
+separate from this infrastructure validation.
+
+Earlier pre-apply blockers below are retained as historical context; Docker
+authentication, shared Graph state ownership and Entra cleanup are now resolved.
+
 ## Target configuration update — 23 October 2026
 
 Published modules `v-93` are now selected for Hello (Skeleton), Cooking, ingress
