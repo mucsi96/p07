@@ -39,14 +39,14 @@ The module's `removed` blocks preserve the existing Deployment, Service and
 legacy ServiceAccount during migration. Its old HTTPRoute is removed in favor of the
 two chart-owned routes.
 
-Cooking and Observatory use published release `v-94`; Hello (Skeleton), ingress
-and logging use `v-93`. All three use dedicated Web registrations and ForwardAuth chart 6.0.0;
+All module references use published release `v-95`. Cooking, Observatory and
+Hello use dedicated Web registrations and ForwardAuth chart 6.0.0;
 their charts own authentication middleware. Ingress enables inline index config,
-and logging exposes same-origin `/_telemetry/collect` on all three app hosts. Other
-platform/application modules retain `v-92`. This is the target configuration;
+and logging exposes same-origin `/_telemetry/collect` on all three app hosts.
+Cooking has no integration-import gateway bypass. This is the target configuration;
 follow the staged app cutover in [the rollout status](docs/ui-auth-rollout-status.md)
 before applying it to an existing installation.
-The dashboard module pins published release `v-94` from `k8s-modules` so a sibling
+The dashboard module pins published release `v-95` from `k8s-modules` so a sibling
 checkout is not required. Run `terraform init` to fetch the pinned module.
 The Terraform GitHub token (`github-token` in Key Vault) needs repository
 **Variables: Read and write** access in addition to its existing permissions,
@@ -55,7 +55,7 @@ Rerun the app pipeline after inventory/token changes to reload them.
 
 ### Observatory gateway and Helm migration
 
-Provision v-94 after reviewing the plan and obtaining explicit apply approval.
+Provision v-95 after reviewing the plan and obtaining explicit apply approval.
 Its chained state moves preserve the shared Microsoft Graph principal while
 replacing the app-specific SPA registration with a confidential Web client.
 Then deploy Observatory MR #20, which adopts the backend resources with Helm and
