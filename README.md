@@ -39,9 +39,13 @@ The module's `removed` blocks preserve the existing Deployment, Service and
 legacy ServiceAccount during migration. Its old HTTPRoute is removed in favor of the
 two chart-owned routes.
 
-Platform modules and Hello use published release `v-92`, with dedicated Web
-registration and ForwardAuth chart 5.0.0. Cooking temporarily uses `v-91` to retain
-SPA redirect coexistence until its cookie-auth app cutover; it also gets chart 5.0.0.
+Hello (Skeleton), Cooking, ingress and logging use published release `v-93`.
+Both applications use dedicated Web registrations and ForwardAuth chart 6.0.0;
+their charts own authentication middleware. Ingress enables inline index config,
+and logging exposes same-origin `/_telemetry/collect` on both app hosts. Other
+platform/application modules retain `v-92`. This is the target configuration;
+follow the staged app cutover in [the rollout status](docs/ui-auth-rollout-status.md)
+before applying it to an existing installation.
 The dashboard module pins the direct-JWT/Helm revision
 `4dd25c137fb284c95336b0d16bbc273854274e5e` from `k8s-modules` so a sibling
 checkout is not required. Run `terraform init` to fetch the pinned module.

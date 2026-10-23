@@ -1,5 +1,45 @@
 # UI authentication rollout status — 20 October 2026
 
+## Target configuration update — 23 October 2026
+
+Published modules `v-93` are now selected for Hello (Skeleton), Cooking, ingress
+and logging. Both app modules select proxy chart **6.0.0**, export `.auth` and
+grant namespace-scoped Middleware deployment permissions. Ingress enables
+rewritebody v0.3.1; logging serves exact POST/OPTIONS `/_telemetry/collect` routes
+on both application hosts. Each app's log URL is composed from its own hostname
+and the logging module's `faro_client_path` output.
+
+Hello's module supplies `client-runtime-config` for the new inline bootstrap.
+Cooking's v-93 module still supplies backend bootstrap URLs and `client-log-url`;
+it does **not** publish inline `client-runtime-config`. Cooking's application
+migration is therefore a separate prerequisite, not completed by these p07 refs.
+Cooking's current main deployment script does not yet consume `.auth` or clear
+old Helm values. Do not deploy it unchanged as the chart-6 consumer.
+
+### Required cutover before applying this target
+
+1. Provision plugin, same-origin collector routes, namespace permissions, proxy
+   descriptors and fixed `__Host-session` cookies while retaining proxy chart 5.
+   The module implementation at `8dccfa3a79faf1fc8c4a4ac88e038917cc725835` records
+   the preparatory contract; it is not a published release pin for this p07 target.
+2. Deploy compatible Hello and Cooking builds using app-owned authentication
+   middleware and reset legacy Helm `routeFilters` values. Preserve Cooking's
+   independently authenticated recipe-import exclusion, backend JWT/roles and
+   mutation CSRF protection. Coordinate Hello's environment-bootstrap removal.
+3. Verify no live HTTPRoutes reference legacy proxy-owned middleware, and that
+   Cooking no longer needs SPA redirect coexistence. v-93 removes that old input
+   and can retire the old SPA registration; inspect the registration/state
+   transition before applying. Never delete a shared Graph principal.
+4. Only then apply the v-93 app-module target, which upgrades both proxies to
+   chart 6 and removes legacy policy resources.
+
+No infrastructure apply is part of this configuration update. Other modules
+retain their saved v-92 pins, and Observatory's independent commit pin and
+`reinstall_generation = "initial"` are preserved.
+
+The remainder of this document is the historical 20 October snapshot, not the
+current target configuration.
+
 This branch records the previously authorized rollout configuration and Netcup
 authentication retry improvements. It does not activate the pending UI hosting
 design or authorize a new infrastructure apply.

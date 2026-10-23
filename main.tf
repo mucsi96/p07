@@ -252,6 +252,8 @@ data "azurerm_key_vault_secret" "cooking_openai_api_key" {
 locals {
   grafana_hostname = "grafana.${data.azurerm_key_vault_secret.dns_zone.value}"
   faro_hostname    = "faro.${data.azurerm_key_vault_secret.dns_zone.value}"
+  hello_hostname   = "hello.${data.azurerm_key_vault_secret.dns_zone.value}"
+  cooking_hostname = "cooking.${data.azurerm_key_vault_secret.dns_zone.value}"
   # /collect is the path the Faro Web SDK POSTs telemetry to. Stored verbatim
   # in each app's Key Vault so the SPA can use it without further URL juggling.
   client_log_url = "https://${local.faro_hostname}/collect"
@@ -384,7 +386,7 @@ module "create_redis" {
 }
 
 module "setup_ingress_controller" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_ingress_controller?ref=v-92"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_ingress_controller?ref=v-93"
 
   dns_zone              = data.azurerm_key_vault_secret.dns_zone.value
   k8s_config            = module.setup_cluster.k8s_config
@@ -394,6 +396,7 @@ module "setup_ingress_controller" {
   cloudflare_ipv6_cidrs = data.cloudflare_ip_ranges.cloudflare.ipv6_cidrs
   authorized_as         = data.azurerm_key_vault_secret.authorized_as.value
   enable_forward_auth   = true
+  enable_index_config   = true
   edge_firewall_exceptions = [
     {
       description = "Allow the bank email worker to POST notifications to the expense tracker"
@@ -445,7 +448,7 @@ locals {
     port     = local.database.port
     database = local.database.name
   }
-  forwardauth_pilot = {
+  app_forward_auth = {
     trusted_proxy_cidrs = ["10.42.0.0/16"]
     session_redis = {
       connection_url = module.create_redis.connection_url
@@ -484,13 +487,14 @@ module "setup_victoria_metrics" {
 }
 
 module "setup_victoria_logs" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_victoria_logs?ref=v-92"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_victoria_logs?ref=v-93"
 
   alloy_chart_version = "1.8.1" #https://github.com/grafana/helm-charts/releases?q=alloy
   # In-cluster VLSingle API URL owned by the stack module; Alloy pushes both
   # pod logs and Faro browser telemetry to its compatible ingestion endpoint.
-  victoria_logs_url = module.setup_victoria_metrics.victoria_logs_url
-  faro_hostname     = local.faro_hostname
+  victoria_logs_url     = module.setup_victoria_metrics.victoria_logs_url
+  faro_hostname         = local.faro_hostname
+  faro_client_hostnames = [local.hello_hostname, local.cooking_hostname]
   faro_cors_allowed_origins = [
     "https://*.${data.azurerm_key_vault_secret.dns_zone.value}",
   ]
@@ -599,7 +603,7 @@ module "setup_learn_language_app" {
 }
 
 module "setup_hello_app" {
-  source                = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_hello_app?ref=v-92"
+  source                = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_hello_app?ref=v-93"
   environment_name      = var.environment_name
   azure_location        = var.azure_location
   claude_api_key        = data.azurerm_key_vault_secret.hello_claude_api_key.value
@@ -609,10 +613,10 @@ module "setup_hello_app" {
   azure_subscription_id = var.azure_subscription_id
   tenant_id             = data.azurerm_client_config.current.tenant_id
   k8s_oidc_config       = module.setup_cluster.k8s_oidc_config
-  client_log_url        = local.client_log_url
+  client_log_url        = "https://${local.hello_hostname}${module.setup_victoria_logs.faro_client_path}"
   database              = local.database
   twingate_service_key  = module.setup_twingate_access.service_key
-  forward_auth          = local.forwardauth_pilot
+  forward_auth          = local.app_forward_auth
 }
 
 module "setup_training_log_app" {
@@ -677,8 +681,8 @@ module "setup_library_app" {
 }
 
 module "setup_cooking_app" {
-  # Keep SPA redirect coexistence until the cookie-auth app build is deployed.
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_cooking_app?ref=v-91"
+  # Apply only after Cooking's cookie-auth/app-owned middleware cutover.
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_cooking_app?ref=v-93"
 
   environment_name      = var.environment_name
   azure_location        = var.azure_location
@@ -690,10 +694,10 @@ module "setup_cooking_app" {
   tenant_id             = data.azurerm_client_config.current.tenant_id
   azure_subscription_id = var.azure_subscription_id
   k8s_oidc_config       = module.setup_cluster.k8s_oidc_config
-  client_log_url        = local.client_log_url
+  client_log_url        = "https://${local.cooking_hostname}${module.setup_victoria_logs.faro_client_path}"
   database              = local.database
   twingate_service_key  = module.setup_twingate_access.service_key
-  forward_auth          = merge(local.forwardauth_pilot, { retain_spa_redirects = true })
+  forward_auth          = local.app_forward_auth
 }
 
 # module "setup_party_app" {
