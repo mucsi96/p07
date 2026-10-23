@@ -40,6 +40,31 @@ retain their saved v-92 pins, and Observatory's independent commit pin and
 The remainder of this document is the historical 20 October snapshot, not the
 current target configuration.
 
+### Live pre-apply verification — 23 October 2026
+
+After operator authorization, dependencies and the Azure backend were initialized
+and the create script's setup/plan phase was executed. Apply was not invoked.
+The stored backend configuration lacked `azure_tenant_id`; a local ignored
+declaration and the authenticated Azure CLI tenant supplied that input.
+
+The plan failed on Docker provider authentication (`empty username found in
+store`). Its incomplete summary was 24 additions, 31 changes and 17 deletions;
+this is not an approved or complete execution plan. It includes deletion of
+Cooking's tracked shared Microsoft Graph service principal and the inherited
+Observatory proxy/registration/route migration. Resolve shared-principal state
+ownership and scope the Observatory migration before retrying any apply.
+
+Live read-only checks confirmed:
+
+- Hello: client-app 23.0.0, spring-app 31.0.0, proxy chart 5.0.0. Its server
+  HTTPRoute still references `hello-oauth2-proxy-api`, which chart 6 removes.
+- Cooking: client-app 22.0.0, go-app 1.0.0, proxy chart 5.0.0. Its client and
+  server HTTPRoutes have no authentication Middleware references.
+
+The required app-first cutover has therefore not happened. Running the full
+auto-apply script against this target now would not meet the intended rollout
+contract. No infrastructure apply or state-ownership change was performed.
+
 This branch records the previously authorized rollout configuration and Netcup
 authentication retry improvements. It does not activate the pending UI hosting
 design or authorize a new infrastructure apply.
