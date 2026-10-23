@@ -1,5 +1,19 @@
 # UI authentication rollout status — 20 October 2026
 
+## v-94 provisioning — 23 October 2026
+
+Module MR #146 merged and published as **v-94**, commit
+`28e1e70b0d5ad23efea67cf10afed4dc470ddac0`. Cooking and Observatory now pin this
+release. Observatory receives the standard ForwardAuth inputs and dedicated app
+vault; the logging route includes its hostname alongside Hello and Cooking.
+
+The operator explicitly requested running `scripts/create.sh`. Initialization,
+configuration validation and the review plan succeeded. The plan preserves
+database/storage and server resources, and moves Observatory's shared Graph
+principal from the SPA address to the Web address. Deletions are limited to the
+old app-specific SPA resources and obsolete platform-vault deploy permission.
+The create-script execution and post-apply validation are in progress.
+
 ## Application migration follow-up — 23 October 2026
 
 Skeleton has since deployed client-app 24.0.0 and spring-app 32.0.0 with proxy
@@ -17,7 +31,7 @@ Observatory. Do not guess the next version. The p07 follow-up must:
 
 - In `dashboard.tf`, replace `kubeconfig_secret_id` with
   `k8s_oidc_config = azurerm_key_vault_secret.k8s_oidc_config.value`, add
-  `azure_location = var.azure_location` and `forward_auth = local.forwardauth_pilot`.
+  `azure_location = var.azure_location` and `forward_auth = local.app_forward_auth`.
 - Set Observatory's `client_log_url` to its HTTPS host plus
   `module.setup_victoria_logs.faro_client_path`.
 - Add the Observatory hostname to the existing logging module's

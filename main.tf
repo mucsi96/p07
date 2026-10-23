@@ -250,10 +250,11 @@ data "azurerm_key_vault_secret" "cooking_openai_api_key" {
 }
 
 locals {
-  grafana_hostname = "grafana.${data.azurerm_key_vault_secret.dns_zone.value}"
-  faro_hostname    = "faro.${data.azurerm_key_vault_secret.dns_zone.value}"
-  hello_hostname   = "hello.${data.azurerm_key_vault_secret.dns_zone.value}"
-  cooking_hostname = "cooking.${data.azurerm_key_vault_secret.dns_zone.value}"
+  grafana_hostname     = "grafana.${data.azurerm_key_vault_secret.dns_zone.value}"
+  faro_hostname        = "faro.${data.azurerm_key_vault_secret.dns_zone.value}"
+  hello_hostname       = "hello.${data.azurerm_key_vault_secret.dns_zone.value}"
+  cooking_hostname     = "cooking.${data.azurerm_key_vault_secret.dns_zone.value}"
+  observatory_hostname = "apps.${data.azurerm_key_vault_secret.dns_zone.value}"
   # /collect is the path the Faro Web SDK POSTs telemetry to. Stored verbatim
   # in each app's Key Vault so the SPA can use it without further URL juggling.
   client_log_url = "https://${local.faro_hostname}/collect"
@@ -494,7 +495,7 @@ module "setup_victoria_logs" {
   # pod logs and Faro browser telemetry to its compatible ingestion endpoint.
   victoria_logs_url     = module.setup_victoria_metrics.victoria_logs_url
   faro_hostname         = local.faro_hostname
-  faro_client_hostnames = [local.hello_hostname, local.cooking_hostname]
+  faro_client_hostnames = [local.hello_hostname, local.cooking_hostname, local.observatory_hostname]
   faro_cors_allowed_origins = [
     "https://*.${data.azurerm_key_vault_secret.dns_zone.value}",
   ]
@@ -681,8 +682,8 @@ module "setup_library_app" {
 }
 
 module "setup_cooking_app" {
-  # Apply only after Cooking's cookie-auth/app-owned middleware cutover.
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_cooking_app?ref=v-93"
+  # Supplies the inline-config contract consumed by Cooking's gateway migration.
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_cooking_app?ref=v-94"
 
   environment_name      = var.environment_name
   azure_location        = var.azure_location
