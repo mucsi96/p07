@@ -1,5 +1,24 @@
 # UI authentication rollout status — 20 October 2026
 
+## All modules on v-95 — 23 October 2026
+
+At the operator's request, all module references now pin published **v-95**,
+including the commented Party example. All 21 unique initialized remote module
+sources were verified against this pin. Configuration validation passed.
+
+The reviewed plan and authorized `scripts/create.sh` execution completed with
+**0 added, 9 changed, 0 destroyed**. Changes were the Cooking integration-import
+bypass removal, seven namespace-scoped Middleware permission updates, and Netcup
+refresh-token rotation. No server, database or storage replacement was planned.
+
+Live verification confirmed empty Cooking proxy `excludedRoutes`, removal of the
+integration-import HTTPRoute, all three Cooking deployments ready at their observed
+generations, and `cooking-pvc` Bound to `cooking-app`. No HTTPRoute reported a failed
+Accepted/ResolvedRefs condition. Updated namespace roles contain the expected
+Middleware permissions. Post-apply planning succeeded with only the expected
+Netcup refresh-token secret rotation (one update), and no remaining platform or
+application resource changes. The validation plan was not applied.
+
 ## v-94 provisioning — 23 October 2026
 
 Module MR #146 merged and published as **v-94**, commit
