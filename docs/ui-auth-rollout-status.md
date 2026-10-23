@@ -1,5 +1,35 @@
 # UI authentication rollout status — 20 October 2026
 
+## Application migration follow-up — 23 October 2026
+
+Skeleton has since deployed client-app 24.0.0 and spring-app 32.0.0 with proxy
+6.0.0. Live routing, unauthenticated redirects/API rejection, static bundles and
+same-origin Faro delivery to VictoriaLogs were verified. Earlier Hello status
+below describes the infrastructure-first checkpoint, not this completed rollout.
+
+Cooking migration: https://github.com/mucsi96/cooking-app/pull/29.
+Supporting modules: https://github.com/mucsi96/k8s-modules/pull/146.
+Cooking's full container E2E suite passed (32 tests). Observatory retains its
+Rust/React stack and is moving to separate API/client images and shared charts.
+
+After module MR #146 releases, pin its actual published release for Cooking and
+Observatory. Do not guess the next version. The p07 follow-up must:
+
+- In `dashboard.tf`, replace `kubeconfig_secret_id` with
+  `k8s_oidc_config = azurerm_key_vault_secret.k8s_oidc_config.value`, add
+  `azure_location = var.azure_location` and `forward_auth = local.forwardauth_pilot`.
+- Set Observatory's `client_log_url` to its HTTPS host plus
+  `module.setup_victoria_logs.faro_client_path`.
+- Add the Observatory hostname to the existing logging module's
+  `faro_client_hostnames` so POST/OPTIONS telemetry reaches the collector.
+- Review the plan's Graph principal state moves, app-specific registration
+  replacement, dedicated app vault and namespace RBAC; obtain explicit approval
+  for any new apply. Preserve all database/storage and shared Graph objects.
+- Provision those contracts before merging/deploying the app migrations.
+
+Current module pins remain explicit published references. This follow-up records
+the dependency and caller changes; it performs no additional infrastructure apply.
+
 ## Applied infrastructure — 23 October 2026
 
 The operator explicitly authorized infrastructure-first rollout with temporary
