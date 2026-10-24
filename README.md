@@ -58,8 +58,8 @@ The module's `removed` blocks preserve the existing Deployment, Service and
 legacy ServiceAccount during migration. Its old HTTPRoute is removed in favor of the
 two chart-owned routes.
 
-The applied module release is `v-96`. This branch stages explicit `v-97` references
-for Observatory static hosting; publish that module release before merging or applying.
+The applied module release is `v-96`. All module sources on this branch pin the
+latest published release, `v-97`, including Observatory static hosting.
 Observatory uses an environment-prefixed storage account with separate document
 and Blob asset containers, app-origin CORS, and scoped deployment permissions.
 Cooking, Observatory and
