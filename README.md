@@ -58,7 +58,11 @@ The module's `removed` blocks preserve the existing Deployment, Service and
 legacy ServiceAccount during migration. Its old HTTPRoute is removed in favor of the
 two chart-owned routes.
 
-All module sources use explicit `v-96` release references. Cooking, Observatory and
+The applied module release is `v-96`. All module sources on this branch pin the
+latest published release, `v-97`, including Observatory static hosting.
+Observatory uses an environment-prefixed storage account with separate document
+and Blob asset containers, app-origin CORS, and scoped deployment permissions.
+Cooking, Observatory and
 Hello use dedicated Web registrations and published ForwardAuth chart 7.0.0;
 their charts own authentication middleware. Ingress enables inline index config,
 and logging exposes same-origin `/_telemetry/collect` on all three app hosts.
