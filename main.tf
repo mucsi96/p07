@@ -606,7 +606,7 @@ module "setup_learn_language_app" {
 
 module "setup_hello_app" {
   source                      = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_hello_app?ref=v-96"
-  client_storage_account_name = "p07helloweb${substr(sha256(var.azure_subscription_id), 0, 8)}"
+  client_storage_account_name = "${var.environment_name}helloweb${substr(sha256(var.azure_subscription_id), 0, 8)}"
   environment_name            = var.environment_name
   azure_location              = var.azure_location
   claude_api_key              = data.azurerm_key_vault_secret.hello_claude_api_key.value
