@@ -1,5 +1,5 @@
 module "setup_app_dashboard" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_dashboard?ref=v-95"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_dashboard?ref=v-96"
 
   environment_name        = var.environment_name
   hostname                = local.observatory_hostname
