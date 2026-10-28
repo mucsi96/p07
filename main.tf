@@ -684,20 +684,23 @@ module "setup_library_app" {
 }
 
 module "setup_cooking_app" {
-  # Supplies the inline-config contract consumed by Cooking's gateway migration.
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_cooking_app?ref=v-97"
+  # Published module commit adds the same static-storage contract as Hello/Observatory.
+  # https://github.com/mucsi96/k8s-modules/pull/151
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_cooking_app?ref=79229a6d6a45d03ee145e0128721fa2bbed1d446"
+
+  client_storage_account_name = "${var.environment_name}cookweb${substr(sha256(var.azure_subscription_id), 0, 8)}"
 
   environment_name      = var.environment_name
   azure_location        = var.azure_location
-  claude_api_key        = data.azurerm_key_vault_secret.cooking_claude_api_key.value
-  openai_api_key        = data.azurerm_key_vault_secret.cooking_openai_api_key.value
+  claude_api_key         = data.azurerm_key_vault_secret.cooking_claude_api_key.value
+  openai_api_key         = data.azurerm_key_vault_secret.cooking_openai_api_key.value
   owner                 = local.owner
-  k8s_oidc_issuer_url   = module.setup_cluster.oidc_issuer_url
+  k8s_oidc_issuer_url    = module.setup_cluster.oidc_issuer_url
   hostname              = data.azurerm_key_vault_secret.dns_zone.value
   tenant_id             = data.azurerm_client_config.current.tenant_id
   azure_subscription_id = var.azure_subscription_id
-  k8s_oidc_config       = module.setup_cluster.k8s_oidc_config
-  client_log_url        = "https://${local.cooking_hostname}${module.setup_victoria_logs.faro_client_path}"
+  k8s_oidc_config        = module.setup_cluster.k8s_oidc_config
+  client_log_url         = "https://${local.cooking_hostname}${module.setup_victoria_logs.faro_client_path}"
   database              = local.database
   twingate_service_key  = module.setup_twingate_access.service_key
   forward_auth          = local.app_forward_auth

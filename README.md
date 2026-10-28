@@ -20,15 +20,17 @@ Terraform state, secrets, and the OIDC discovery document live in Azure
 
 ## Static client hosting
 
-Skeleton/Hello uses Azure Storage: `$web` holds index HTML and a public-read
+Skeleton/Hello, Observatory and Cooking use the same Azure Storage contract: `$web` holds index HTML and a public-read
 `assets` Blob container serves all browser assets directly with app-origin CORS.
 Its pipeline has separately scoped Entra upload permissions for both containers.
-The document-only `static-client-app` **2.0.0** chart provides authenticated SPA
+The document-only `static-client-app` **4.0.0** chart provides authenticated SPA
 routing. The chart is published. Terraform enables external HTTPS origins in Traefik and publishes the
-storage descriptor in the app vault. All modules are pinned to published release
-`v-96`, applied on 2026-10-24. Static storage and deployment permissions are
-provisioned; publishing the client assets and installing its static chart remain
-owned by Skeleton's deployment pipeline.
+storage descriptor in each app vault. The last recorded apply is `v-96` on
+2026-10-24. This branch stages v-97 plus the published Cooking module commit
+from [modules #151](https://github.com/mucsi96/k8s-modules/pull/151).
+Provisioning the new Cooking/Observatory storage contracts requires a reviewed
+plan and explicit apply approval. Publishing assets and installing static charts
+remain owned by each application's deployment pipeline.
 
 ## Application dashboard
 
@@ -45,8 +47,8 @@ It uses the same `register_api`/`register_web` modules and
 `observatory-api-workload-identity` naming convention as the other apps.
 Fleet snapshots are cached in memory and rebuilt after restarts.
 
-The app's `Pipeline` publishes separate server/client images and deploys
-`mucsi96/rust-app` (minimum **2.0.0**) and `mucsi96/client-app` (minimum **24.0.0**).
+The app's `Pipeline` publishes a server image and tested static client archive and deploys
+`mucsi96/rust-app` **6.0.0** and `mucsi96/static-client-app` **4.0.0**.
 Their HTTPRoutes serve `/api` and `/` at `https://apps.<dns-zone>`.
 p07 does not own image pins or build workflows. The GitHub deploy identity reads
 scoped deployment secrets from the dedicated application vault and receives
@@ -58,8 +60,9 @@ The module's `removed` blocks preserve the existing Deployment, Service and
 legacy ServiceAccount during migration. Its old HTTPRoute is removed in favor of the
 two chart-owned routes.
 
-The applied module release is `v-96`. All module sources on this branch pin the
-latest published release, `v-97`, including Observatory static hosting.
+The last recorded applied module release is `v-96`. Module sources on this branch pin
+published release `v-97`, including Observatory static hosting, except Cooking,
+which pins the exact published commit adding its static hosting contract.
 Observatory uses an environment-prefixed storage account with separate document
 and Blob asset containers, app-origin CORS, and scoped deployment permissions.
 Cooking, Observatory and
@@ -81,14 +84,14 @@ Rerun the app pipeline after inventory/token changes to reload them.
 The v-94 provisioning completed the chained state moves preserving the shared
 Microsoft Graph principal while replacing the app-specific SPA registration with
 a confidential Web client. Those historical move blocks have now been retired.
-Then deploy Observatory MR #20, which adopts the backend resources with Helm and
-installs the React client. Verify document login redirects, API token enforcement
-and same-origin telemetry. Temporary app downtime is expected during cutover.
+Observatory's gateway migration (#20) and static client migration (#23) are merged.
+Its application deploy uses Helm-owned API and document routes. Verify document
+login redirects, API token enforcement and same-origin telemetry after provisioning.
 
 ## Stock ForwardAuth pilot
 
-The applied chart-5 session-auth foundation and the pending client-owned hosting
-cutover are recorded in [the rollout status](docs/ui-auth-rollout-status.md).
+Historical chart-5 session-auth and subsequent gateway cutover observations
+are recorded in [the rollout status](docs/ui-auth-rollout-status.md).
 The current architecture and migration guide is
 [Skeleton issue #105](https://github.com/mucsi96/skeleton-app/issues/105).
 Keep module refs published and explicit; provision the new routing/configuration
