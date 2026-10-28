@@ -26,8 +26,8 @@ Its pipeline has separately scoped Entra upload permissions for both containers.
 The document-only `static-client-app` **4.0.0** chart provides authenticated SPA
 routing. The chart is published. Terraform enables external HTTPS origins in Traefik and publishes the
 storage descriptor in each app vault. The last recorded apply is `v-96` on
-2026-10-24. This branch stages v-97 plus the published Cooking module commit
-from [modules #151](https://github.com/mucsi96/k8s-modules/pull/151).
+2026-10-24. All module references on this branch use the latest published release,
+`v-98`, which includes [modules #151](https://github.com/mucsi96/k8s-modules/pull/151).
 Provisioning the new Cooking/Observatory storage contracts requires a reviewed
 plan and explicit apply approval. Publishing assets and installing static charts
 remain owned by each application's deployment pipeline.
@@ -60,9 +60,8 @@ The module's `removed` blocks preserve the existing Deployment, Service and
 legacy ServiceAccount during migration. Its old HTTPRoute is removed in favor of the
 two chart-owned routes.
 
-The last recorded applied module release is `v-96`. Module sources on this branch pin
-published release `v-97`, including Observatory static hosting, except Cooking,
-which pins the exact published commit adding its static hosting contract.
+The last recorded applied module release is `v-96`. All module sources on this
+branch pin published release `v-98`, including Cooking and Observatory static hosting.
 Observatory uses an environment-prefixed storage account with separate document
 and Blob asset containers, app-origin CORS, and scoped deployment permissions.
 Cooking, Observatory and
