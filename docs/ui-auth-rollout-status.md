@@ -1,5 +1,34 @@
 # UI authentication rollout status — 20 October 2026
 
+## All modules on v-98 — applied 30 October 2026
+
+All 23 source references (including the commented example) and 22 downloaded
+remote modules use published **v-98**. Cooking no longer uses a temporary commit
+pin. The operator explicitly requested running and observing `scripts/create.sh`.
+After restoring Twingate connectivity, the reviewed plan and apply completed:
+**7 added, 1 changed, 0 destroyed**. No server reinstall or resource replacement
+was planned or performed.
+
+The additions provision Cooking's static storage account, website and assets
+container, separate container-scoped upload roles, `client-storage-config`, and
+scoped deployment-secret read access. The update rotates the Netcup refresh token.
+Verified after apply:
+
+- Storage provisioning succeeded, shared keys are disabled, and Blob CORS allows
+  only `https://cooking.ibari.ch` with GET/HEAD/OPTIONS.
+- Both `$web` and `assets` have Storage Blob Data Contributor assignments; the
+  app vault publishes account/document/asset metadata with scoped read access.
+- All 34 Deployments are ready at their observed generations, all 10 PVCs are
+  Bound, and all Hello/Cooking/Observatory HTTPRoutes are accepted/resolved.
+- Each public app document request returns a login redirect (302); unauthenticated
+  API calls return 401 without redirecting.
+- A fresh post-apply plan contains only expected Netcup refresh-token rotation;
+  there are no remaining application/platform resource changes. It was not applied.
+
+Cooking app PR #35 remains open: infrastructure is ready, but its current client
+Deployment remains until the application pipeline publishes static assets and
+upgrades the client chart. Earlier rollout checkpoints below are historical.
+
 ## All modules on v-95 — 23 October 2026
 
 At the operator's request, all module references now pin published **v-95**,
