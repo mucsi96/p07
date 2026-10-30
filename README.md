@@ -26,8 +26,8 @@ Its pipeline has separately scoped Entra upload permissions for both containers.
 The document-only `static-client-app` **5.0.0** chart provides authenticated SPA
 routing. Faro configuration is compiled into each app; documents need no body
 injection. Terraform publishes storage metadata and owns per-app ForwardAuth
-**8.0.0**. All module sources pin **v-99**, applied on 2026-10-30: 0 additions,
-9 updates and 6 deletions of obsolete config secrets/read grants. Publishing
+**8.0.0**. All module sources pin **v-101**, applied on 2026-10-30: 0 additions,
+1 update and 21 deletions of obsolete Docker Hub publishing credentials. Publishing
 assets and deploying application charts remain owned by the app pipelines.
 
 ## Application dashboard
@@ -60,8 +60,7 @@ The Terraform GitHub token (`github-token` in Key Vault) needs repository
 so the module can manage `DEPLOY_ENABLED` in `observatory-app`.
 Rerun the app pipeline after inventory/token changes to reload them.
 
-See [rollout verification](docs/ui-auth-rollout-status.md) and the
-[architecture summary](https://github.com/mucsi96/skeleton-app/issues/105).
+See the [architecture summary](https://github.com/mucsi96/skeleton-app/issues/105).
 
 ## Modules used
 
