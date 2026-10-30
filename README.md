@@ -60,8 +60,7 @@ The Terraform GitHub token (`github-token` in Key Vault) needs repository
 so the module can manage `DEPLOY_ENABLED` in `observatory-app`.
 Rerun the app pipeline after inventory/token changes to reload them.
 
-See [rollout verification](docs/ui-auth-rollout-status.md) and the
-[architecture summary](https://github.com/mucsi96/skeleton-app/issues/105).
+See the [architecture summary](https://github.com/mucsi96/skeleton-app/issues/105).
 
 ## Modules used
 
