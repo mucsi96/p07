@@ -20,6 +20,18 @@ module "setup_app_dashboard" {
     module.setup_library_app.dashboard_app,
     module.setup_cooking_app.dashboard_app,
     module.setup_backup_app.dashboard_app,
+    {
+      name       = "p07"
+      namespace  = ""
+      repository = "mucsi96/p07"
+      url        = "https://github.com/mucsi96/p07"
+    },
+    {
+      name       = "k8s-modules"
+      namespace  = ""
+      repository = "mucsi96/k8s-modules"
+      url        = "https://github.com/mucsi96/k8s-modules"
+    },
   ]
   github_token                 = data.azurerm_key_vault_secret.github_token.value
   owner                        = local.owner
