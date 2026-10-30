@@ -47,8 +47,8 @@ Fleet snapshots are cached in memory and rebuilt after restarts.
 
 The inventory also tracks `mucsi96/p07` and `mucsi96/k8s-modules` as
 repository-only entries: PRs, checks, issues and dependency updates without Kubernetes
-workloads. This requires Observatory repository-only support and a released
-dashboard module that skips namespace RBAC for empty namespaces before applying.
+workloads. Empty namespaces skip Kubernetes collection and namespace RBAC;
+workload health is shown as not applicable.
 
 The app's `Pipeline` publishes a server image and tested static client archive and deploys
 `mucsi96/rust-app` **7.0.0** and `mucsi96/static-client-app` **5.0.0**.
