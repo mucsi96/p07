@@ -1,5 +1,5 @@
 module "setup_app_dashboard" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_dashboard?ref=v-98"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_dashboard?ref=v-99"
 
   client_storage_account_name = "${var.environment_name}obsweb${substr(sha256(var.azure_subscription_id), 0, 8)}"
 
