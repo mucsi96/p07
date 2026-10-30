@@ -18,6 +18,24 @@ Cloudflare edge security, and Entra authentication).
 Terraform state, secrets, and the OIDC discovery document live in Azure
 (remote backend storage account, Key Vault, static website).
 
+## Application infrastructure ownership
+
+Application-specific Terraform lives directly in this repository:
+`hello.tf`, `cooking.tf`, `library.tf`, `learn_language.tf`, `training_log.tf`,
+`expense_tracker.tf`, `observatory.tf`, `backup.tf`, and `bank_email_worker.tf`.
+The bank email worker source is `workers/bank-email.js`. Party's definition is
+retained in `party.tf.disabled`, matching its previously disabled configuration.
+
+These files compose published, explicitly pinned `k8s-modules` building blocks
+for app namespaces/deployment identities, Entra registrations, PostgreSQL schemas,
+static storage and ForwardAuth. App-specific roles, secrets, inventory, volumes
+and integrations belong here; workloads and image/chart deployment remain owned
+by each application's repository.
+
+The live p07 state has already migrated to these top-level definitions, and the
+completed move blocks have been removed. See [the ownership migration](docs/application-ownership.md)
+for the applied result and compatibility with older state snapshots.
+
 ## Static client hosting
 
 Skeleton/Hello, Observatory and Cooking use the same Azure Storage contract: `$web` holds index HTML and a public-read
@@ -35,7 +53,7 @@ assets and deploying application charts remain owned by the app pipelines.
 **Observatory** lives in its own repository,
 [mucsi96/observatory-app](https://github.com/mucsi96/observatory-app): a Rust/Axum and
 React dashboard for application health, deployed versions, deployment
-jobs, open MRs/PRs with check statuses, and issue counts. `dashboard.tf` provisions
+jobs, open MRs/PRs with check statuses, and issue counts. `observatory.tf` provisions
 its inventory, read-only collector access, GitHub
 deploy identity, Entra Web/API registrations and ingress NetworkPolicy.
 Like skeleton-app, the UI uses per-app oauth2-proxy sessions and chart-owned
@@ -57,7 +75,7 @@ and credentials into chart-owned config/env Secrets, triggering checksum rollout
 Logging exposes same-origin `/_telemetry/collect` on all three app hosts.
 The Terraform GitHub token (`github-token` in Key Vault) needs repository
 **Variables: Read and write** access in addition to its existing permissions,
-so the module can manage `DEPLOY_ENABLED` in `observatory-app`.
+so Terraform can manage `DEPLOY_ENABLED` in `observatory-app`.
 Rerun the app pipeline after inventory/token changes to reload them.
 
 See the [architecture summary](https://github.com/mucsi96/skeleton-app/issues/105).
@@ -235,9 +253,9 @@ bash scripts/destroy.sh
 
 ### Database roles
 
-Each database-backed application module provisions its own non-administrator
+Each database-backed application definition provisions its own non-administrator
 login role and same-named schema. The PostgreSQL module only owns the database
-server, while the backup service consumes each application module's schema-owner
+server, while the backup service consumes each application's schema-owner
 credentials for schema-scoped backup and restore operations.
 
 Module release `v-71` provisions roles and schemas during Terraform apply over
