@@ -259,7 +259,7 @@ locals {
   # in each app's Key Vault so the SPA can use it without further URL juggling.
   client_log_url = "https://${local.faro_hostname}/collect"
 
-  oauth2_proxy_chart_version = "10.4.3"  #https://github.com/oauth2-proxy/manifests/releases
+  oauth2_proxy_chart_version = "10.7.1"  #https://github.com/oauth2-proxy/manifests/releases
   oauth2_proxy_image_version = "v7.15.2" #https://github.com/oauth2-proxy/oauth2-proxy/releases
 
   expense_tracker_hostname = "expenses.${data.azurerm_key_vault_secret.dns_zone.value}"
@@ -416,7 +416,7 @@ module "create_database_namespace" {
 module "setup_monitoring_crds" {
   source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_monitoring_crds?ref=v-98"
 
-  monitoring_crds_chart_version = "28.0.1" #https://github.com/prometheus-community/helm-charts/releases?q=prometheus-operator-crds
+  monitoring_crds_chart_version = "32.0.2" #https://github.com/prometheus-community/helm-charts/releases?q=prometheus-operator-crds
   wait_for                      = module.setup_ingress_controller.ingress_controller_ready
 }
 
@@ -476,7 +476,7 @@ module "setup_victoria_metrics" {
   grafana_client_id                        = module.register_grafana_dashboard.client_id
   grafana_client_secret                    = module.register_grafana_dashboard.client_secret
   valid_email                              = data.azurerm_key_vault_secret.letsencrypt_email.value
-  victoria_metrics_k8s_stack_chart_version = "0.91.2" #https://github.com/VictoriaMetrics/helm-charts/releases?q=victoria-metrics-k8s-stack
+  victoria_metrics_k8s_stack_chart_version = "0.97.0" #https://github.com/VictoriaMetrics/helm-charts/releases?q=victoria-metrics-k8s-stack
   oauth2_proxy_chart_version               = local.oauth2_proxy_chart_version
   oauth2_proxy_image_version               = local.oauth2_proxy_image_version
   session_redis = {
@@ -491,7 +491,7 @@ module "setup_victoria_metrics" {
 module "setup_victoria_logs" {
   source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_victoria_logs?ref=v-98"
 
-  alloy_chart_version = "1.8.1" #https://github.com/grafana/helm-charts/releases?q=alloy
+  alloy_chart_version = "1.15.0" #https://github.com/grafana/helm-charts/releases?q=alloy
   # In-cluster VLSingle API URL owned by the stack module; Alloy pushes both
   # pod logs and Faro browser telemetry to its compatible ingestion endpoint.
   victoria_logs_url     = module.setup_victoria_metrics.victoria_logs_url
@@ -691,15 +691,15 @@ module "setup_cooking_app" {
 
   environment_name      = var.environment_name
   azure_location        = var.azure_location
-  claude_api_key         = data.azurerm_key_vault_secret.cooking_claude_api_key.value
-  openai_api_key         = data.azurerm_key_vault_secret.cooking_openai_api_key.value
+  claude_api_key        = data.azurerm_key_vault_secret.cooking_claude_api_key.value
+  openai_api_key        = data.azurerm_key_vault_secret.cooking_openai_api_key.value
   owner                 = local.owner
-  k8s_oidc_issuer_url    = module.setup_cluster.oidc_issuer_url
+  k8s_oidc_issuer_url   = module.setup_cluster.oidc_issuer_url
   hostname              = data.azurerm_key_vault_secret.dns_zone.value
   tenant_id             = data.azurerm_client_config.current.tenant_id
   azure_subscription_id = var.azure_subscription_id
-  k8s_oidc_config        = module.setup_cluster.k8s_oidc_config
-  client_log_url         = "https://${local.cooking_hostname}${module.setup_victoria_logs.faro_client_path}"
+  k8s_oidc_config       = module.setup_cluster.k8s_oidc_config
+  client_log_url        = "https://${local.cooking_hostname}${module.setup_victoria_logs.faro_client_path}"
   database              = local.database
   twingate_service_key  = module.setup_twingate_access.service_key
   forward_auth          = local.app_forward_auth
