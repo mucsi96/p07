@@ -20,15 +20,15 @@ Terraform state, secrets, and the OIDC discovery document live in Azure
 
 ## Static client hosting
 
-Skeleton/Hello uses Azure Storage: `$web` holds index HTML and a public-read
+Skeleton/Hello, Observatory and Cooking use the same Azure Storage contract: `$web` holds index HTML and a public-read
 `assets` Blob container serves all browser assets directly with app-origin CORS.
 Its pipeline has separately scoped Entra upload permissions for both containers.
-The document-only `static-client-app` **2.0.0** chart provides authenticated SPA
-routing. The chart is published. Terraform enables external HTTPS origins in Traefik and publishes the
-storage descriptor in the app vault. All modules are pinned to published release
-`v-96`, applied on 2026-10-24. Static storage and deployment permissions are
-provisioned; publishing the client assets and installing its static chart remain
-owned by Skeleton's deployment pipeline.
+The document-only `static-client-app` **5.0.0** chart provides authenticated SPA
+routing. Faro configuration is compiled into each app; documents need no body
+injection. Terraform publishes storage metadata and owns per-app ForwardAuth
+**8.0.0**. All module sources pin **v-99**, applied on 2026-10-30: 0 additions,
+9 updates and 6 deletions of obsolete config secrets/read grants. Publishing
+assets and deploying application charts remain owned by the app pipelines.
 
 ## Application dashboard
 
@@ -45,8 +45,8 @@ It uses the same `register_api`/`register_web` modules and
 `observatory-api-workload-identity` naming convention as the other apps.
 Fleet snapshots are cached in memory and rebuilt after restarts.
 
-The app's `Pipeline` publishes separate server/client images and deploys
-`mucsi96/rust-app` (minimum **2.0.0**) and `mucsi96/client-app` (minimum **24.0.0**).
+The app's `Pipeline` publishes a server image and tested static client archive and deploys
+`mucsi96/rust-app` **7.0.0** and `mucsi96/static-client-app` **5.0.0**.
 Their HTTPRoutes serve `/api` and `/` at `https://apps.<dns-zone>`.
 p07 does not own image pins or build workflows. The GitHub deploy identity reads
 scoped deployment secrets from the dedicated application vault and receives
@@ -54,41 +54,14 @@ namespace-scoped permissions for Helm/chart resources and Middleware in
 `observatory`. The deploy script converts Terraform-owned source configuration
 and credentials into chart-owned config/env Secrets, triggering checksum rollouts.
 
-The module's `removed` blocks preserve the existing Deployment, Service and
-legacy ServiceAccount during migration. Its old HTTPRoute is removed in favor of the
-two chart-owned routes.
-
-All module sources use explicit `v-96` release references. Cooking, Observatory and
-Hello use dedicated Web registrations and published ForwardAuth chart 7.0.0;
-their charts own authentication middleware. Ingress enables inline index config,
-and logging exposes same-origin `/_telemetry/collect` on all three app hosts.
-Cooking has no integration-import gateway bypass. This is the target configuration;
-follow the staged app cutover in [the rollout status](docs/ui-auth-rollout-status.md)
-before applying it to an existing installation.
-The dashboard module uses the same explicit release pin from `k8s-modules` so a sibling
-checkout is not required. Run `terraform init` to fetch the pinned module.
+Logging exposes same-origin `/_telemetry/collect` on all three app hosts.
 The Terraform GitHub token (`github-token` in Key Vault) needs repository
 **Variables: Read and write** access in addition to its existing permissions,
 so the module can manage `DEPLOY_ENABLED` in `observatory-app`.
 Rerun the app pipeline after inventory/token changes to reload them.
 
-### Observatory gateway and Helm migration
-
-The v-94 provisioning completed the chained state moves preserving the shared
-Microsoft Graph principal while replacing the app-specific SPA registration with
-a confidential Web client. Those historical move blocks have now been retired.
-Then deploy Observatory MR #20, which adopts the backend resources with Helm and
-installs the React client. Verify document login redirects, API token enforcement
-and same-origin telemetry. Temporary app downtime is expected during cutover.
-
-## Stock ForwardAuth pilot
-
-The applied chart-5 session-auth foundation and the pending client-owned hosting
-cutover are recorded in [the rollout status](docs/ui-auth-rollout-status.md).
-The current architecture and migration guide is
-[Skeleton issue #105](https://github.com/mucsi96/skeleton-app/issues/105).
-Keep module refs published and explicit; provision the new routing/configuration
-model only after the coordinated chart, module and app releases are ready.
+See [rollout verification](docs/ui-auth-rollout-status.md) and the
+[architecture summary](https://github.com/mucsi96/skeleton-app/issues/105).
 
 ## Modules used
 
