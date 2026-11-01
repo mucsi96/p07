@@ -77,9 +77,13 @@ locals {
 module "backup_app_base" {
   source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_base?ref=v-102"
 
-  github_repository      = "postgres-azure-backup"
-  environment_name       = var.environment_name
-  app_name               = "backup"
+  github_repository = "postgres-azure-backup"
+  environment_name  = var.environment_name
+  app_name          = "backup"
+  deployment_secrets = {
+    client-storage-config = jsonencode(module.backup_client_storage.deployment_config)
+    forward-auth-config   = jsonencode(module.backup_forward_auth.deployment_config)
+  }
   azure_location         = var.azure_location
   tenant_id              = data.azurerm_client_config.current.tenant_id
   azure_subscription_id  = var.azure_subscription_id
@@ -88,10 +92,10 @@ module "backup_app_base" {
   app_hostname           = local.backup_app_hostname
   api_client_id          = module.setup_backup_api.client_id
   api_client_secret      = module.setup_backup_api.client_secret
-  spa_client_id          = module.setup_backup_spa.client_id
+  spa_client_id          = module.setup_backup_web.client_id
   api_resource_object_id = module.setup_backup_api.resource_object_id
   k8s_oidc_config        = sensitive(module.setup_cluster.k8s_oidc_config)
-  client_log_url         = local.client_log_url
+  client_log_url         = "https://${local.backup_app_hostname}${module.setup_victoria_logs.faro_client_path}"
 }
 
 module "setup_backup_api" {
@@ -106,16 +110,66 @@ module "setup_backup_api" {
   k8s_service_account_name      = "postgres-azure-backup-api-workload-identity"
 }
 
-module "setup_backup_spa" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_spa?ref=v-102"
+module "setup_backup_web" {
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_web?ref=v-102"
   owner  = local.owner
 
-  display_name  = "Backup SPA"
-  redirect_uris = ["https://${local.backup_app_hostname}/", "http://localhost:4202/"]
+  display_name  = "Backup Web"
+  redirect_uris = ["https://${local.backup_app_hostname}/oauth2/callback"]
 
-  api_id        = module.setup_backup_api.application_id
-  api_client_id = module.setup_backup_api.client_id
-  api_scope_id  = module.setup_backup_api.scope_id
+  api_access = {
+    application_id = module.setup_backup_api.application_id
+    client_id      = module.setup_backup_api.client_id
+    scope_id       = module.setup_backup_api.scope_id
+  }
+}
+
+module "backup_client_storage" {
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_static_website?ref=v-102"
+
+  name                = "${var.environment_name}backupweb${substr(sha256(var.azure_subscription_id), 0, 8)}"
+  resource_group_name = var.environment_name
+  location            = var.azure_location
+  deploy_principal_id = module.backup_app_base.deploy_principal_id
+  app_origin          = "https://${local.backup_app_hostname}"
+}
+
+module "backup_forward_auth" {
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_forwardauth?ref=v-102"
+
+  name                = "backup"
+  namespace           = module.backup_app_base.namespace
+  hostname            = local.backup_app_hostname
+  tenant_id           = data.azurerm_client_config.current.tenant_id
+  client_id           = module.setup_backup_web.client_id
+  client_secret       = module.setup_backup_web.client_secret
+  api_client_id       = module.setup_backup_api.client_id
+  trusted_proxy_cidrs = nonsensitive(sensitive(local.app_forward_auth).trusted_proxy_cidrs)
+  session_redis       = sensitive(local.app_forward_auth).session_redis
+  gateway_parent_ref  = sensitive(local.app_forward_auth).gateway_parent_ref
+}
+
+# Preserve the existing Entra application, principal and grants while changing
+# the client from browser PKCE to a confidential gateway session client.
+moved {
+  from = module.setup_backup_spa.azuread_service_principal.msgraph
+  to   = module.setup_backup_web.azuread_service_principal.msgraph
+}
+moved {
+  from = module.setup_backup_spa.azuread_application.spa
+  to   = module.setup_backup_web.azuread_application.web
+}
+moved {
+  from = module.setup_backup_spa.azuread_service_principal.spa_service_principal
+  to   = module.setup_backup_web.azuread_service_principal.web
+}
+moved {
+  from = module.setup_backup_spa.azuread_application_pre_authorized.allow_spa_to_access_api
+  to   = module.setup_backup_web.azuread_application_pre_authorized.api[0]
+}
+moved {
+  from = module.setup_backup_spa.azuread_service_principal_delegated_permission_grant.allow_spa_to_access_msgraph_user_profile
+  to   = module.setup_backup_web.azuread_service_principal_delegated_permission_grant.oidc
 }
 
 data "azurerm_storage_account" "backup_storage_account" {
