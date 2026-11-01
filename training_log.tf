@@ -17,6 +17,10 @@ module "training_log_app_base" {
   github_repository = "training-log-pro"
   environment_name  = var.environment_name
   app_name          = "training-log"
+  deployment_secrets = {
+    client-storage-config = jsonencode(module.training_log_client_storage.deployment_config)
+    forward-auth-config   = jsonencode(module.training_log_forward_auth.deployment_config)
+  }
   app_secrets = {
     strava-client-id       = sensitive(data.azurerm_key_vault_secret.training_log_strava_client_id.value)
     strava-client-secret   = sensitive(data.azurerm_key_vault_secret.training_log_strava_client_secret.value)
@@ -59,6 +63,46 @@ module "setup_training_log_spa" {
   api_id        = module.setup_training_log_api.application_id
   api_client_id = module.setup_training_log_api.client_id
   api_scope_id  = module.setup_training_log_api.scope_id
+}
+
+# Retain the existing SPA registration during the coordinated app rollout.
+# Removing it before the app deploy would invalidate the currently served UI.
+module "setup_training_log_web" {
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_web?ref=v-102"
+  owner  = local.owner
+
+  display_name  = "Training Log Web"
+  redirect_uris = ["https://${local.training_log_app_hostname}/oauth2/callback"]
+  api_access = {
+    application_id = module.setup_training_log_api.application_id
+    client_id      = module.setup_training_log_api.client_id
+    scope_id       = module.setup_training_log_api.scope_id
+  }
+}
+
+module "training_log_client_storage" {
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_static_website?ref=v-102"
+
+  name                = "${var.environment_name}trainweb${substr(sha256(var.azure_subscription_id), 0, 8)}"
+  resource_group_name = var.environment_name
+  location            = var.azure_location
+  deploy_principal_id = module.training_log_app_base.deploy_principal_id
+  app_origin          = "https://${local.training_log_app_hostname}"
+}
+
+module "training_log_forward_auth" {
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_forwardauth?ref=v-102"
+
+  name                = "training-log"
+  namespace           = module.training_log_app_base.namespace
+  hostname            = local.training_log_app_hostname
+  tenant_id           = data.azurerm_client_config.current.tenant_id
+  client_id           = module.setup_training_log_web.client_id
+  client_secret       = module.setup_training_log_web.client_secret
+  api_client_id       = module.setup_training_log_api.client_id
+  trusted_proxy_cidrs = nonsensitive(sensitive(local.app_forward_auth).trusted_proxy_cidrs)
+  session_redis       = sensitive(local.app_forward_auth).session_redis
+  gateway_parent_ref  = sensitive(local.app_forward_auth).gateway_parent_ref
 }
 
 resource "kubernetes_persistent_volume_v1" "training_log_app_pv" {

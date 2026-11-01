@@ -38,6 +38,17 @@ for the applied result and compatibility with older state snapshots.
 
 ## Static client hosting
 
+Training Log's gateway/static-hosting migration is provisioned in `training_log.tf`
+for https://github.com/mucsi96/training-log-pro/issues/194. Apply this infrastructure
+before the application migration: it adds the Web registration, per-app
+ForwardAuth, static storage/upload permissions and deployment secrets, and adds
+the same-origin Faro host. The existing SPA registration remains during rollout
+so the current UI continues working until the app deploy; retire it separately
+after verification. Database/schema, PVs, API identity/roles and encrypted provider
+tokens keep their existing resources. The application owns the more-specific
+device API-key and OAuth callback routes and deploys them before enabling API
+ForwardAuth. No infrastructure apply is part of this proposed change.
+
 Backup's gateway authentication and static hosting are defined in `backup.tf`,
 using the same hosting and build-time Faro pattern, pending infrastructure rollout.
 
