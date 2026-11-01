@@ -149,29 +149,6 @@ module "backup_forward_auth" {
   gateway_parent_ref  = sensitive(local.app_forward_auth).gateway_parent_ref
 }
 
-# Preserve the existing Entra application, principal and grants while changing
-# the client from browser PKCE to a confidential gateway session client.
-moved {
-  from = module.setup_backup_spa.azuread_service_principal.msgraph
-  to   = module.setup_backup_web.azuread_service_principal.msgraph
-}
-moved {
-  from = module.setup_backup_spa.azuread_application.spa
-  to   = module.setup_backup_web.azuread_application.web
-}
-moved {
-  from = module.setup_backup_spa.azuread_service_principal.spa_service_principal
-  to   = module.setup_backup_web.azuread_service_principal.web
-}
-moved {
-  from = module.setup_backup_spa.azuread_application_pre_authorized.allow_spa_to_access_api
-  to   = module.setup_backup_web.azuread_application_pre_authorized.api[0]
-}
-moved {
-  from = module.setup_backup_spa.azuread_service_principal_delegated_permission_grant.allow_spa_to_access_msgraph_user_profile
-  to   = module.setup_backup_web.azuread_service_principal_delegated_permission_grant.oidc
-}
-
 data "azurerm_storage_account" "backup_storage_account" {
   name                = "ibari"
   resource_group_name = "ibari"
