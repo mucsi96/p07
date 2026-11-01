@@ -17,6 +17,9 @@ data "cloudflare_zone" "bank_email_worker_zone" {
 # routing and rejects the zone apex with a 422.
 resource "cloudflare_email_routing_settings" "bank_email_worker_email_routing" {
   zone_id = data.azurerm_key_vault_secret.cloudflare_zone_id.value
+  # The API returns false for an omitted value; provider 5.26.0 requires an
+  # explicit value to avoid an inconsistent null-to-false result after apply.
+  support_subaddress = false
 }
 
 resource "cloudflare_workers_script" "bank_email_worker" {
