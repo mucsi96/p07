@@ -1,18 +1,18 @@
-# Application-owned infrastructure; reusable modules remain pinned to v-101.
+# Application-owned infrastructure; reusable modules remain pinned to v-102.
 
 locals {
   library_app_hostname = "library.${data.azurerm_key_vault_secret.dns_zone.value}"
 }
 
 module "library_postgres_schema" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_postgres_schema?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_postgres_schema?ref=v-102"
 
   database = local.database
   schema   = "library"
 }
 
 module "library_app_base" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_base?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_base?ref=v-102"
 
   github_repository = "library-app"
   environment_name  = var.environment_name
@@ -35,7 +35,7 @@ module "library_app_base" {
 }
 
 module "setup_library_api" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_api?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_api?ref=v-102"
   owner  = local.owner
 
   display_name = "Library API"
@@ -47,7 +47,7 @@ module "setup_library_api" {
 }
 
 module "setup_library_spa" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_spa?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_spa?ref=v-102"
   owner  = local.owner
 
   display_name  = "Library SPA"

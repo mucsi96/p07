@@ -1,18 +1,18 @@
-# Application-owned infrastructure; reusable modules remain pinned to v-101.
+# Application-owned infrastructure; reusable modules remain pinned to v-102.
 
 locals {
   training_log_app_hostname = "training.${data.azurerm_key_vault_secret.dns_zone.value}"
 }
 
 module "training_log_postgres_schema" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_postgres_schema?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_postgres_schema?ref=v-102"
 
   database = local.database
   schema   = "training_log"
 }
 
 module "training_log_app_base" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_base?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_base?ref=v-102"
 
   github_repository = "training-log-pro"
   environment_name  = var.environment_name
@@ -38,7 +38,7 @@ module "training_log_app_base" {
 }
 
 module "setup_training_log_api" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_api?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_api?ref=v-102"
   owner  = local.owner
 
   display_name = "Training Log API"
@@ -50,7 +50,7 @@ module "setup_training_log_api" {
 }
 
 module "setup_training_log_spa" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_spa?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_spa?ref=v-102"
   owner  = local.owner
 
   display_name  = "Training Log SPA"

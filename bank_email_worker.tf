@@ -1,4 +1,4 @@
-# Application-owned infrastructure; reusable modules remain pinned to v-101.
+# Application-owned infrastructure; reusable modules remain pinned to v-102.
 
 locals {
   bank_email_worker_bank_email_address = "bank@${sensitive(data.azurerm_key_vault_secret.dns_zone.value)}"

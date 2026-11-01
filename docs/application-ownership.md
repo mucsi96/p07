@@ -2,8 +2,8 @@
 
 p07 now owns application-specific infrastructure as top-level Terraform files.
 The definitions were transferred from the published `k8s-modules` **v-101**
-release, which was already pinned by p07. Reusable modules remain pinned to that
-same release; this migration does not require a new module release.
+release, which was already pinned by p07. Following publication of the module
+removals, all 52 reusable module sources now pin **v-102**, including disabled Party.
 
 | Former module | p07 definition |
 | --- | --- |
@@ -63,3 +63,15 @@ apply still requires explicit operator approval.
 Application builds and chart releases remain in their respective repositories.
 Future app-specific configuration edits happen here; shared platform/auth/storage
 behavior continues to be released through `k8s-modules`.
+
+## v-102 rollout verification — 2026-11-01
+
+With explicit operator approval, `scripts/create.sh` generated and applied a fresh
+live plan using v-102 and no `moved` blocks. It completed with **0 additions,
+1 update, 0 deletions**, with no replacements or state moves. The sole update
+persisted the rotated Netcup refresh token.
+
+Terraform validation and formatting checks passed. Installed remote modules were
+verified against v-102, and live state contained no former application-module
+addresses. After the script completed, the Kubernetes node was Ready and all 33
+Deployments had their desired available and updated replica counts.

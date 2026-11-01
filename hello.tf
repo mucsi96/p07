@@ -1,18 +1,18 @@
-# Application-owned infrastructure; reusable modules remain pinned to v-101.
+# Application-owned infrastructure; reusable modules remain pinned to v-102.
 
 locals {
   hello_app_hostname = "hello.${data.azurerm_key_vault_secret.dns_zone.value}"
 }
 
 module "hello_postgres_schema" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_postgres_schema?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_postgres_schema?ref=v-102"
 
   database = local.database
   schema   = "hello"
 }
 
 module "hello_app_base" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_base?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_base?ref=v-102"
 
   github_repository = "skeleton-app"
   environment_name  = var.environment_name
@@ -39,7 +39,7 @@ module "hello_app_base" {
 }
 
 module "hello_client_storage" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_static_website?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_static_website?ref=v-102"
 
   name                = "${var.environment_name}helloweb${substr(sha256(var.azure_subscription_id), 0, 8)}"
   resource_group_name = var.environment_name
@@ -49,7 +49,7 @@ module "hello_client_storage" {
 }
 
 module "setup_hello_api" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_api?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_api?ref=v-102"
   owner  = local.owner
 
   display_name = "Hello API"
@@ -61,7 +61,7 @@ module "setup_hello_api" {
 }
 
 module "setup_hello_web" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_web?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_web?ref=v-102"
   owner  = local.owner
 
   display_name  = "Hello Web"
@@ -74,7 +74,7 @@ module "setup_hello_web" {
 }
 
 module "hello_forward_auth" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_forwardauth?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_forwardauth?ref=v-102"
 
   name                = "hello"
   namespace           = module.hello_app_base.namespace

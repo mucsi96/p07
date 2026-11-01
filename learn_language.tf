@@ -1,18 +1,18 @@
-# Application-owned infrastructure; reusable modules remain pinned to v-101.
+# Application-owned infrastructure; reusable modules remain pinned to v-102.
 
 locals {
   learn_language_app_hostname = "language.${data.azurerm_key_vault_secret.dns_zone.value}"
 }
 
 module "learn_language_postgres_schema" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_postgres_schema?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_postgres_schema?ref=v-102"
 
   database = local.database
   schema   = "learn_language"
 }
 
 module "learn_language_app_base" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_base?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_base?ref=v-102"
 
   github_repository = "learn-language"
   environment_name  = var.environment_name
@@ -40,7 +40,7 @@ module "learn_language_app_base" {
 }
 
 module "setup_learn_language_api" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_api?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_api?ref=v-102"
   owner  = local.owner
 
   display_name = "Learn Language API"
@@ -52,7 +52,7 @@ module "setup_learn_language_api" {
 }
 
 module "setup_learn_language_spa" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_spa?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_spa?ref=v-102"
   owner  = local.owner
 
   display_name  = "Learn Language SPA"

@@ -1,18 +1,18 @@
-# Application-owned infrastructure; reusable modules remain pinned to v-101.
+# Application-owned infrastructure; reusable modules remain pinned to v-102.
 
 locals {
   expense_tracker_app_hostname = "expenses.${data.azurerm_key_vault_secret.dns_zone.value}"
 }
 
 module "expense_tracker_postgres_schema" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_postgres_schema?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_postgres_schema?ref=v-102"
 
   database = local.database
   schema   = "expensetracker"
 }
 
 module "expense_tracker_app_base" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_base?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_base?ref=v-102"
 
   github_repository      = "expense-tracker"
   environment_name       = var.environment_name
@@ -32,7 +32,7 @@ module "expense_tracker_app_base" {
 }
 
 module "setup_expense_tracker_api" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_api?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_api?ref=v-102"
   owner  = local.owner
 
   display_name = "Expense Tracker API"
@@ -44,7 +44,7 @@ module "setup_expense_tracker_api" {
 }
 
 module "setup_expense_tracker_spa" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_spa?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_spa?ref=v-102"
   owner  = local.owner
 
   display_name  = "Expense Tracker SPA"

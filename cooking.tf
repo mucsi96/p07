@@ -1,4 +1,4 @@
-# Application-owned infrastructure; reusable modules remain pinned to v-101.
+# Application-owned infrastructure; reusable modules remain pinned to v-102.
 
 locals {
   cooking_app_hostname      = "cooking.${data.azurerm_key_vault_secret.dns_zone.value}"
@@ -6,14 +6,14 @@ locals {
 }
 
 module "cooking_postgres_schema" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_postgres_schema?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_postgres_schema?ref=v-102"
 
   database = local.database
   schema   = "cooking"
 }
 
 module "cooking_app_base" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_base?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_base?ref=v-102"
 
   github_repository = "cooking-app"
   environment_name  = var.environment_name
@@ -41,7 +41,7 @@ module "cooking_app_base" {
 }
 
 module "cooking_client_storage" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_static_website?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_static_website?ref=v-102"
 
   name                = "${var.environment_name}cookweb${substr(sha256(var.azure_subscription_id), 0, 8)}"
   resource_group_name = var.environment_name
@@ -51,7 +51,7 @@ module "cooking_client_storage" {
 }
 
 module "setup_cooking_api" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_api?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_api?ref=v-102"
   owner  = local.owner
 
   display_name = "Cooking API"
@@ -63,7 +63,7 @@ module "setup_cooking_api" {
 }
 
 module "setup_cooking_spa" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_spa?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_spa?ref=v-102"
   count  = nonsensitive(sensitive(local.app_forward_auth) == null ? 1 : 0)
   owner  = local.owner
 
@@ -76,7 +76,7 @@ module "setup_cooking_spa" {
 }
 
 module "setup_cooking_web" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_web?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_web?ref=v-102"
   count  = nonsensitive(sensitive(local.app_forward_auth) == null ? 0 : 1)
   owner  = local.owner
 
@@ -91,7 +91,7 @@ module "setup_cooking_web" {
 }
 
 module "cooking_forward_auth" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_forwardauth?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_forwardauth?ref=v-102"
   count  = nonsensitive(sensitive(local.app_forward_auth) == null ? 0 : 1)
 
   name                = "cooking"

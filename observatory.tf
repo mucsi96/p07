@@ -1,4 +1,4 @@
-# Application-owned infrastructure; reusable modules remain pinned to v-101.
+# Application-owned infrastructure; reusable modules remain pinned to v-102.
 
 resource "azurerm_key_vault" "observatory_app" {
   resource_group_name        = var.environment_name
@@ -169,7 +169,7 @@ locals {
 resource "terraform_data" "observatory_ready" { input = module.setup_ingress_controller.ingress_controller_ready }
 
 module "observatory_client_storage" {
-  source              = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_static_website?ref=v-101"
+  source              = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_static_website?ref=v-102"
   name                = "${var.environment_name}obsweb${substr(sha256(var.azure_subscription_id), 0, 8)}"
   resource_group_name = var.environment_name
   location            = var.azure_location
@@ -256,7 +256,7 @@ removed {
 }
 
 module "setup_observatory_api" {
-  source                        = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_api?ref=v-101"
+  source                        = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_api?ref=v-102"
   owner                         = local.owner
   display_name                  = "Observatory API"
   roles                         = ["readApps"]
@@ -266,7 +266,7 @@ module "setup_observatory_api" {
 }
 
 module "setup_observatory_web" {
-  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_web?ref=v-101"
+  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_web?ref=v-102"
   owner         = local.owner
   display_name  = "Observatory Web"
   redirect_uris = ["https://${local.observatory_hostname}/oauth2/callback"]
@@ -278,7 +278,7 @@ module "setup_observatory_web" {
 }
 
 module "observatory_forward_auth" {
-  source              = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_forwardauth?ref=v-101"
+  source              = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_forwardauth?ref=v-102"
   name                = local.observatory_name
   namespace           = kubernetes_namespace_v1.observatory_dashboard.metadata[0].name
   hostname            = local.observatory_hostname

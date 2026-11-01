@@ -1,4 +1,4 @@
-# Application-owned infrastructure; reusable modules remain pinned to v-101.
+# Application-owned infrastructure; reusable modules remain pinned to v-102.
 
 locals {
   backup_databases = [
@@ -75,7 +75,7 @@ locals {
 }
 
 module "backup_app_base" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_base?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_base?ref=v-102"
 
   github_repository      = "postgres-azure-backup"
   environment_name       = var.environment_name
@@ -95,7 +95,7 @@ module "backup_app_base" {
 }
 
 module "setup_backup_api" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_api?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_api?ref=v-102"
   owner  = local.owner
 
   display_name = "Backup API"
@@ -107,7 +107,7 @@ module "setup_backup_api" {
 }
 
 module "setup_backup_spa" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_spa?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_spa?ref=v-102"
   owner  = local.owner
 
   display_name  = "Backup SPA"

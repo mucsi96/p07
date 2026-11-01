@@ -44,8 +44,9 @@ Its pipeline has separately scoped Entra upload permissions for both containers.
 The document-only `static-client-app` **5.0.0** chart provides authenticated SPA
 routing. Faro configuration is compiled into each app; documents need no body
 injection. Terraform publishes storage metadata and owns per-app ForwardAuth
-**8.0.0**. All module sources pin **v-101**, applied on 2026-10-30: 0 additions,
-1 update and 21 deletions of obsolete Docker Hub publishing credentials. Publishing
+**8.0.0**. All module sources pin **v-102**, including the disabled Party definition.
+`scripts/create.sh` completed on 2026-11-01 with no move blocks: 0 additions,
+1 update (the rotated Netcup refresh token), and 0 deletions. Publishing
 assets and deploying application charts remain owned by the app pipelines.
 
 ## Application dashboard
