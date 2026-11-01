@@ -496,7 +496,7 @@ module "setup_victoria_logs" {
   # pod logs and Faro browser telemetry to its compatible ingestion endpoint.
   victoria_logs_url     = module.setup_victoria_metrics.victoria_logs_url
   faro_hostname         = local.faro_hostname
-  faro_client_hostnames = [local.hello_hostname, local.cooking_hostname, local.observatory_hostname, local.backup_app_hostname, local.library_app_hostname]
+  faro_client_hostnames = [local.hello_hostname, local.cooking_hostname, local.observatory_hostname, local.backup_app_hostname, local.library_app_hostname, local.expense_tracker_hostname]
   faro_cors_allowed_origins = [
     "https://*.${data.azurerm_key_vault_secret.dns_zone.value}",
   ]
