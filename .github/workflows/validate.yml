@@ -1,0 +1,40 @@
+name: Validate dependencies
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: 1.16.4
+      - name: Declare bootstrap inputs without credentials or a backend
+        shell: python
+        run: |
+          import json
+          import re
+          from pathlib import Path
+
+          bootstrap = Path('scripts/init.yaml').read_text()
+          names = re.findall(r'^\s+variable "([^"]+)" \{', bootstrap, re.MULTILINE)
+          if not names:
+              raise SystemExit('No bootstrap input declarations found')
+          Path('ci-variables.tf.json').write_text(json.dumps({
+              'variable': {name: {'type': 'string'} for name in names}
+          }))
+      - name: Initialize the locked providers without the remote backend
+        run: terraform init -backend=false -input=false -lockfile=readonly
+      - name: Validate provider and module compatibility
+        run: terraform validate -no-color
