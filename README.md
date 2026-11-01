@@ -38,9 +38,8 @@ for the applied result and compatibility with older state snapshots.
 
 ## Static client hosting
 
-Backup's gateway/static-client migration is defined in `backup.tf`; see
-[the coordinated cutover](docs/backup-static-hosting.md). It adds the same hosting
-and build-time Faro pattern to the backup app, pending infrastructure rollout.
+Backup's gateway authentication and static hosting are defined in `backup.tf`,
+using the same hosting and build-time Faro pattern, pending infrastructure rollout.
 
 Skeleton/Hello, Observatory and Cooking use the same Azure Storage contract: `$web` holds index HTML and a public-read
 `assets` Blob container serves all browser assets directly with app-origin CORS.
