@@ -20,6 +20,10 @@ module "library_app_base" {
   app_secrets = {
     openai-api-key = sensitive(data.azurerm_key_vault_secret.library_openai_api_key.value)
   }
+  deployment_secrets = {
+    client-storage-config = jsonencode(module.library_client_storage.deployment_config)
+    forward-auth-config   = jsonencode(module.library_forward_auth.deployment_config)
+  }
   azure_location         = var.azure_location
   tenant_id              = data.azurerm_client_config.current.tenant_id
   azure_subscription_id  = var.azure_subscription_id
@@ -31,7 +35,45 @@ module "library_app_base" {
   spa_client_id          = module.setup_library_spa.client_id
   api_resource_object_id = module.setup_library_api.resource_object_id
   k8s_oidc_config        = sensitive(module.setup_cluster.k8s_oidc_config)
-  client_log_url         = local.client_log_url
+  client_log_url         = "https://${local.library_app_hostname}${module.setup_victoria_logs.faro_client_path}"
+}
+
+module "library_client_storage" {
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_static_website?ref=v-102"
+
+  name                = "${var.environment_name}libweb${substr(sha256(var.azure_subscription_id), 0, 8)}"
+  resource_group_name = var.environment_name
+  location            = var.azure_location
+  deploy_principal_id = module.library_app_base.deploy_principal_id
+  app_origin          = "https://${local.library_app_hostname}"
+}
+
+module "setup_library_web" {
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_web?ref=v-102"
+  owner  = local.owner
+
+  display_name  = "Library Web"
+  redirect_uris = ["https://${local.library_app_hostname}/oauth2/callback"]
+  api_access = {
+    application_id = module.setup_library_api.application_id
+    client_id      = module.setup_library_api.client_id
+    scope_id       = module.setup_library_api.scope_id
+  }
+}
+
+module "library_forward_auth" {
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_forwardauth?ref=v-102"
+
+  name                = "library"
+  namespace           = module.library_app_base.namespace
+  hostname            = local.library_app_hostname
+  tenant_id           = data.azurerm_client_config.current.tenant_id
+  client_id           = module.setup_library_web.client_id
+  client_secret       = module.setup_library_web.client_secret
+  api_client_id       = module.setup_library_api.client_id
+  trusted_proxy_cidrs = nonsensitive(sensitive(local.app_forward_auth).trusted_proxy_cidrs)
+  session_redis       = sensitive(local.app_forward_auth).session_redis
+  gateway_parent_ref  = sensitive(local.app_forward_auth).gateway_parent_ref
 }
 
 module "setup_library_api" {
@@ -47,6 +89,8 @@ module "setup_library_api" {
 }
 
 module "setup_library_spa" {
+  # Retained until the gateway app rollout is verified, so the currently
+  # deployed SPA can still sign in during infrastructure provisioning.
   source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_spa?ref=v-102"
   owner  = local.owner
 
