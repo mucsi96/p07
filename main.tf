@@ -313,14 +313,14 @@ data "cloudflare_ip_ranges" "cloudflare" {}
 # Created before the server: its connector tokens are baked into the Netcup
 # installation script. No depends_on; it must not order after setup_cluster.
 module "setup_twingate_connector" {
-  source           = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_twingate_connector?ref=v-101"
+  source           = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_twingate_connector?ref=v-102"
   environment_name = var.environment_name
 }
 
 # Needs the server's address/port, so it orders after provision_server
 # via field references. No depends_on (would cycle with ssh_ready_wait_for).
 module "setup_twingate_access" {
-  source            = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_twingate_access?ref=v-101"
+  source            = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_twingate_access?ref=v-102"
   environment_name  = var.environment_name
   remote_network_id = module.setup_twingate_connector.remote_network_id
   k8s_host          = module.provision_server.ipv4_address
@@ -330,7 +330,7 @@ module "setup_twingate_access" {
 }
 
 module "provision_server" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/provision_server?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/provision_server?ref=v-102"
 
   server_name             = var.environment_name
   netcup_server_id        = tonumber(data.azurerm_key_vault_secret.netcup_server_id.value)
@@ -350,7 +350,7 @@ module "provision_server" {
 }
 
 module "setup_cluster" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_cluster?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_cluster?ref=v-102"
 
   host                     = module.provision_server.ipv4_address
   ssh_port                 = module.provision_server.ssh_port
@@ -376,18 +376,18 @@ module "setup_cluster" {
 }
 
 module "create_redis_namespace" {
-  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/create_app_namespace?ref=v-101"
+  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/create_app_namespace?ref=v-102"
   k8s_namespace = "redis"
 }
 
 module "create_redis" {
-  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_redis?ref=v-101"
+  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_redis?ref=v-102"
   k8s_name      = "redis"
   k8s_namespace = module.create_redis_namespace.k8s_namespace
 }
 
 module "setup_ingress_controller" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_ingress_controller?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_ingress_controller?ref=v-102"
 
   dns_zone              = data.azurerm_key_vault_secret.dns_zone.value
   k8s_config            = module.setup_cluster.k8s_config
@@ -409,19 +409,19 @@ module "setup_ingress_controller" {
 }
 
 module "create_database_namespace" {
-  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/create_app_namespace?ref=v-101"
+  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/create_app_namespace?ref=v-102"
   k8s_namespace = "db"
 }
 
 module "setup_monitoring_crds" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_monitoring_crds?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_monitoring_crds?ref=v-102"
 
   monitoring_crds_chart_version = "32.0.2" #https://github.com/prometheus-community/helm-charts/releases?q=prometheus-operator-crds
   wait_for                      = module.setup_ingress_controller.ingress_controller_ready
 }
 
 module "create_database" {
-  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/create_postgres_database?ref=v-101"
+  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/create_postgres_database?ref=v-102"
   k8s_name      = "postgres1"
   k8s_namespace = module.create_database_namespace.k8s_namespace
   db_name       = "postgres1"
@@ -461,7 +461,7 @@ locals {
 }
 
 module "register_grafana_dashboard" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_webapp?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_webapp?ref=v-102"
 
   display_name  = "Grafana - ${var.environment_name}"
   owner         = local.owner
@@ -469,7 +469,7 @@ module "register_grafana_dashboard" {
 }
 
 module "setup_victoria_metrics" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_victoria_metrics?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_victoria_metrics?ref=v-102"
 
   grafana_hostname                         = local.grafana_hostname
   tenant_id                                = data.azurerm_client_config.current.tenant_id
@@ -489,7 +489,7 @@ module "setup_victoria_metrics" {
 }
 
 module "setup_victoria_logs" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_victoria_logs?ref=v-101"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_victoria_logs?ref=v-102"
 
   alloy_chart_version = "1.15.0" #https://github.com/grafana/helm-charts/releases?q=alloy
   # In-cluster VLSingle API URL owned by the stack module; Alloy pushes both
@@ -503,218 +503,3 @@ module "setup_victoria_logs" {
   gateway_parent_ref = module.setup_ingress_controller.gateway_parent_ref
   wait_for           = module.setup_victoria_metrics.victoria_metrics_k8s_stack_ready
 }
-
-module "setup_backup_app" {
-  source                = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_backup_app?ref=v-101"
-  environment_name      = var.environment_name
-  azure_location        = var.azure_location
-  owner                 = local.owner
-  k8s_oidc_issuer_url   = module.setup_cluster.oidc_issuer_url
-  hostname              = data.azurerm_key_vault_secret.dns_zone.value
-  azure_subscription_id = var.azure_subscription_id
-  tenant_id             = data.azurerm_client_config.current.tenant_id
-  k8s_oidc_config       = module.setup_cluster.k8s_oidc_config
-  client_log_url        = local.client_log_url
-  twingate_service_key  = module.setup_twingate_access.service_key
-
-  azure_storage_account_resource_group_name = "ibari"
-  azure_storage_account_name                = "ibari"
-
-  dbs_config = [
-    merge(local.backup_db, module.setup_learn_language_app.database_credentials, {
-      name            = "Learn language"
-      schema          = "learn_language"
-      createPlainDump = true
-      folderBackups = [
-        {
-          path = "/app/storage/learn-language"
-        }
-      ]
-      excludeTables = [
-        "study_sessions",
-        "study_session_cards",
-        "model_usage_logs",
-        "api_tokens"
-      ]
-    }),
-    merge(local.backup_db, module.setup_training_log_app.database_credentials, {
-      name            = "Training log"
-      schema          = "training_log"
-      createPlainDump = true
-      excludeTables = [
-        "oauth2_authorized_client"
-      ]
-    }),
-    merge(local.backup_db, module.setup_victoria_metrics.database_credentials, {
-      name            = "Grafana"
-      schema          = "grafana",
-      createPlainDump = true
-    }),
-    merge(local.backup_db, module.setup_library_app.database_credentials, {
-      name            = "Library"
-      schema          = "library"
-      createPlainDump = true,
-      folderBackups = [
-        {
-          path = "/app/storage/library"
-        }
-      ]
-    }),
-    merge(local.backup_db, module.setup_expense_tracker_app.database_credentials, {
-      name            = "Expense tracker"
-      schema          = "expensetracker"
-      createPlainDump = true
-    }),
-    merge(local.backup_db, module.setup_cooking_app.database_credentials, {
-      name            = "Cooking"
-      schema          = "cooking"
-      createPlainDump = true
-      folderBackups = [
-        {
-          path = "/app/storage/cooking"
-        }
-      ]
-    }),
-    merge(local.backup_db, module.setup_hello_app.database_credentials, {
-      name            = "Hello"
-      schema          = "hello"
-      createPlainDump = true
-    }),
-  ]
-}
-
-module "setup_learn_language_app" {
-  source                = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_learn_language_app?ref=v-101"
-  environment_name      = var.environment_name
-  azure_location        = var.azure_location
-  claude_api_key        = data.azurerm_key_vault_secret.learn_language_claude_api_key.value
-  eleven_labs_api_key   = data.azurerm_key_vault_secret.learn_language_eleven_labs_api_key.value
-  google_ai_api_key     = data.azurerm_key_vault_secret.learn_language_google_ai_api_key.value
-  ideogram_api_key      = data.azurerm_key_vault_secret.learn_language_ideogram_api_key.value
-  openai_api_key        = data.azurerm_key_vault_secret.learn_language_openai_api_key.value
-  xai_api_key           = data.azurerm_key_vault_secret.learn_language_xai_api_key.value
-  owner                 = local.owner
-  k8s_oidc_issuer_url   = module.setup_cluster.oidc_issuer_url
-  hostname              = data.azurerm_key_vault_secret.dns_zone.value
-  azure_subscription_id = var.azure_subscription_id
-  tenant_id             = data.azurerm_client_config.current.tenant_id
-  k8s_oidc_config       = module.setup_cluster.k8s_oidc_config
-  client_log_url        = local.client_log_url
-  database              = local.database
-  twingate_service_key  = module.setup_twingate_access.service_key
-}
-
-module "setup_hello_app" {
-  source                      = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_hello_app?ref=v-101"
-  client_storage_account_name = "${var.environment_name}helloweb${substr(sha256(var.azure_subscription_id), 0, 8)}"
-  environment_name            = var.environment_name
-  azure_location              = var.azure_location
-  claude_api_key              = data.azurerm_key_vault_secret.hello_claude_api_key.value
-  owner                       = local.owner
-  k8s_oidc_issuer_url         = module.setup_cluster.oidc_issuer_url
-  hostname                    = data.azurerm_key_vault_secret.dns_zone.value
-  azure_subscription_id       = var.azure_subscription_id
-  tenant_id                   = data.azurerm_client_config.current.tenant_id
-  k8s_oidc_config             = module.setup_cluster.k8s_oidc_config
-  client_log_url              = "https://${local.hello_hostname}${module.setup_victoria_logs.faro_client_path}"
-  database                    = local.database
-  twingate_service_key        = module.setup_twingate_access.service_key
-  forward_auth                = local.app_forward_auth
-}
-
-module "setup_training_log_app" {
-  source                 = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_training_log_app?ref=v-101"
-  environment_name       = var.environment_name
-  azure_location         = var.azure_location
-  strava_client_id       = data.azurerm_key_vault_secret.training_log_strava_client_id.value
-  strava_client_secret   = data.azurerm_key_vault_secret.training_log_strava_client_secret.value
-  withings_client_id     = data.azurerm_key_vault_secret.training_log_withings_client_id.value
-  withings_client_secret = data.azurerm_key_vault_secret.training_log_withings_client_secret.value
-  owner                  = local.owner
-  k8s_oidc_issuer_url    = module.setup_cluster.oidc_issuer_url
-  hostname               = data.azurerm_key_vault_secret.dns_zone.value
-  azure_subscription_id  = var.azure_subscription_id
-  tenant_id              = data.azurerm_client_config.current.tenant_id
-  k8s_oidc_config        = module.setup_cluster.k8s_oidc_config
-  client_log_url         = local.client_log_url
-  database               = local.database
-  twingate_service_key   = module.setup_twingate_access.service_key
-}
-
-module "setup_bank_email_worker" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_bank_email_worker?ref=v-101"
-
-  cloudflare_zone_id = data.azurerm_key_vault_secret.cloudflare_zone_id.value
-  dns_zone           = data.azurerm_key_vault_secret.dns_zone.value
-  target_url         = "https://${local.expense_tracker_hostname}${local.bank_notifications_path}"
-  api_token          = module.setup_expense_tracker_app.bank_notification_token
-}
-
-module "setup_expense_tracker_app" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_expense_tracker_app?ref=v-101"
-
-  environment_name      = var.environment_name
-  azure_location        = var.azure_location
-  owner                 = local.owner
-  k8s_oidc_issuer_url   = module.setup_cluster.oidc_issuer_url
-  hostname              = data.azurerm_key_vault_secret.dns_zone.value
-  tenant_id             = data.azurerm_client_config.current.tenant_id
-  azure_subscription_id = var.azure_subscription_id
-  k8s_oidc_config       = module.setup_cluster.k8s_oidc_config
-  client_log_url        = local.client_log_url
-  database              = local.database
-  twingate_service_key  = module.setup_twingate_access.service_key
-}
-
-module "setup_library_app" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_library_app?ref=v-101"
-
-  environment_name      = var.environment_name
-  azure_location        = var.azure_location
-  openai_api_key        = data.azurerm_key_vault_secret.library_openai_api_key.value
-  owner                 = local.owner
-  k8s_oidc_issuer_url   = module.setup_cluster.oidc_issuer_url
-  hostname              = data.azurerm_key_vault_secret.dns_zone.value
-  tenant_id             = data.azurerm_client_config.current.tenant_id
-  azure_subscription_id = var.azure_subscription_id
-  k8s_oidc_config       = module.setup_cluster.k8s_oidc_config
-  client_log_url        = local.client_log_url
-  database              = local.database
-  twingate_service_key  = module.setup_twingate_access.service_key
-}
-
-module "setup_cooking_app" {
-  # Published release includes the same static-storage contract as Hello/Observatory.
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_cooking_app?ref=v-101"
-
-  client_storage_account_name = "${var.environment_name}cookweb${substr(sha256(var.azure_subscription_id), 0, 8)}"
-
-  environment_name      = var.environment_name
-  azure_location        = var.azure_location
-  claude_api_key        = data.azurerm_key_vault_secret.cooking_claude_api_key.value
-  openai_api_key        = data.azurerm_key_vault_secret.cooking_openai_api_key.value
-  owner                 = local.owner
-  k8s_oidc_issuer_url   = module.setup_cluster.oidc_issuer_url
-  hostname              = data.azurerm_key_vault_secret.dns_zone.value
-  tenant_id             = data.azurerm_client_config.current.tenant_id
-  azure_subscription_id = var.azure_subscription_id
-  k8s_oidc_config       = module.setup_cluster.k8s_oidc_config
-  client_log_url        = "https://${local.cooking_hostname}${module.setup_victoria_logs.faro_client_path}"
-  database              = local.database
-  twingate_service_key  = module.setup_twingate_access.service_key
-  forward_auth          = local.app_forward_auth
-}
-
-# module "setup_party_app" {
-#   source                     = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_party_app?ref=v-101"
-#   environment_name           = var.environment_name
-#   azure_location             = var.azure_location
-#   owner                      = local.owner
-#   k8s_oidc_issuer_url        = module.setup_cluster.oidc_issuer_url
-#   hostname                   = data.azurerm_key_vault_secret.dns_zone.value
-#   tenant_id                  = data.azurerm_client_config.current.tenant_id
-#   azure_subscription_id      = var.azure_subscription_id
-#   k8s_oidc_config            = module.setup_cluster.k8s_oidc_config
-#   client_log_url             = local.client_log_url
-#   twingate_service_key       = module.setup_twingate_access.service_key
-# }
