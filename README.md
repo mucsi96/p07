@@ -52,6 +52,10 @@ token validation. `/api/environment` uses the ordinary authenticated API route.
 The app pipeline uploads assets before index and deploys the authenticated API
 and static-client charts. Verify login/deep links, both token APIs, and Faro after
 deployment; retire the legacy SPA registration in a later change.
+Infrastructure was applied on 2026-11-02: 20 resources added across the initial
+interrupted run and successful retry, 2 updated, and none destroyed. The auth
+deployment is ready and both OAuth and token-exclusion routes are accepted with
+resolved backend references. Application deployment remains the next rollout step.
 
 Training Log's gateway/static-hosting migration is provisioned in `training_log.tf`
 for https://github.com/mucsi96/training-log-pro/issues/194. Apply this infrastructure
