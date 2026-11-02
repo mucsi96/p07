@@ -7,22 +7,27 @@ permissions, while the shared client charts set document responses to
 
 The coordinated application changes cover Skeleton/Hello, Cooking, Library,
 Expense Tracker, Observatory, Training Log and PostgreSQL Backup. Each publishes
-assets to `assets/releases/<github-run-id>-<github-run-attempt>/` and prepares
-document links against that directory. All those assets, including manifests,
+assets directly to the `assets` container without a release prefix. All assets, including manifests,
 icons, fonts and bundles, use `public, max-age=31536000, immutable`.
 
-Relative module, stylesheet and manifest icon references stay within the release;
+Relative module, stylesheet and manifest icon references stay in the asset container;
 document navigation, manifest start URL/scope/ID, API and telemetry stay on the
-application origin. A rerun gets a new directory even if its source commit is
-unchanged. This avoids freezing unversioned filenames for a year.
+application origin.
 
-Assets upload first; `$web/index.html` is replaced last with `no-store`. Old asset
-directories are retained for open tabs and rollback. Do not overwrite an old
-release with different content or delete old assets during deployment.
+After preparing the build, deployment deletes every blob in `$web`, then every
+blob in `assets`, including any old release directories. It uploads only the latest
+assets and publishes `$web/index.html` last with `no-store`. Downtime during this
+replacement is intentional. A failed deletion or upload stops deployment; the
+site can remain unavailable until a successful deployment. Old bundles are not
+retained for open tabs or rollback.
+
+Deleting blobs does not invalidate browser caches. Files whose URLs do not change
+can remain cached for one year even after deployment; content-hashed bundles get
+fresh URLs when their content changes.
 
 These changes take effect when each application's updated pipeline deploys;
-existing blobs are not retroactively modified. No Terraform apply is needed.
+existing blobs are removed on that deployment. No Terraform apply is needed.
 Learn Language's current `main` still deploys a container client, so it has no
 Blob upload pipeline to change. Its client chart supplies the document policy
 and its nginx configuration already caches static resources for one year. Adopt
-the release-directory contract when migrating that app to Blob hosting.
+the replacement and cache contract when migrating that app to Blob hosting.
