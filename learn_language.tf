@@ -17,6 +17,10 @@ module "learn_language_app_base" {
   github_repository = "learn-language"
   environment_name  = var.environment_name
   app_name          = "learn-language"
+  deployment_secrets = {
+    client-storage-config = jsonencode(module.learn_language_client_storage.deployment_config)
+    forward-auth-config   = jsonencode(module.learn_language_forward_auth.deployment_config)
+  }
   app_secrets = {
     claude-api-key      = sensitive(data.azurerm_key_vault_secret.learn_language_claude_api_key.value)
     eleven-labs-api-key = sensitive(data.azurerm_key_vault_secret.learn_language_eleven_labs_api_key.value)
@@ -61,6 +65,58 @@ module "setup_learn_language_spa" {
   api_id        = module.setup_learn_language_api.application_id
   api_client_id = module.setup_learn_language_api.client_id
   api_scope_id  = module.setup_learn_language_api.scope_id
+}
+
+module "setup_learn_language_web" {
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_web?ref=v-102"
+  owner  = local.owner
+
+  display_name  = "Learn Language Web"
+  redirect_uris = ["https://${local.learn_language_app_hostname}/oauth2/callback"]
+  api_access = {
+    application_id = module.setup_learn_language_api.application_id
+    client_id      = module.setup_learn_language_api.client_id
+    scope_id       = module.setup_learn_language_api.scope_id
+  }
+}
+
+module "learn_language_client_storage" {
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_static_website?ref=v-102"
+
+  name                = "${var.environment_name}langweb${substr(sha256(var.azure_subscription_id), 0, 8)}"
+  resource_group_name = var.environment_name
+  location            = var.azure_location
+  deploy_principal_id = module.learn_language_app_base.deploy_principal_id
+  app_origin          = "https://${local.learn_language_app_hostname}"
+}
+
+module "learn_language_forward_auth" {
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_forwardauth?ref=v-102"
+
+  name                = "learn-language"
+  namespace           = module.learn_language_app_base.namespace
+  hostname            = local.learn_language_app_hostname
+  tenant_id           = data.azurerm_client_config.current.tenant_id
+  client_id           = module.setup_learn_language_web.client_id
+  client_secret       = module.setup_learn_language_web.client_secret
+  api_client_id       = module.setup_learn_language_api.client_id
+  trusted_proxy_cidrs = nonsensitive(sensitive(local.app_forward_auth).trusted_proxy_cidrs)
+  session_redis       = sensitive(local.app_forward_auth).session_redis
+  gateway_parent_ref  = sensitive(local.app_forward_auth).gateway_parent_ref
+  excluded_routes = [
+    {
+      path    = "/api/dictionary"
+      method  = "POST"
+      service = "learn-language-server"
+      port    = 8080
+    },
+    {
+      path    = "/api/known-cards"
+      method  = "GET"
+      service = "learn-language-server"
+      port    = 8080
+    }
+  ]
 }
 
 resource "kubernetes_persistent_volume_v1" "learn_language_app_pv" {
