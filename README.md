@@ -63,6 +63,8 @@ injection. Terraform publishes storage metadata and owns per-app ForwardAuth
 1 update (the rotated Netcup refresh token), and 0 deletions. Publishing
 assets and deploying application charts remain owned by the app pipelines.
 
+The asset-cache rollout is tracked in [the cache contract](docs/static-client-caching.md).
+
 ## Application dashboard
 
 **Observatory** lives in its own repository,
