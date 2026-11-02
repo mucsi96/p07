@@ -37,12 +37,12 @@ terraform {
 
     cloudflare = {
       source  = "cloudflare/cloudflare"
-      version = "5.26.0"
+      version = "5.28.1"
     }
 
     twingate = {
       source  = "Twingate/twingate"
-      version = "5.0.3"
+      version = "5.2.0"
     }
 
     github = {
