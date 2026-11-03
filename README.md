@@ -38,6 +38,25 @@ for the applied result and compatibility with older state snapshots.
 
 ## Static client hosting
 
+Learn Language's migration is defined in `learn_language.tf` for
+https://github.com/mucsi96/learn-language/pull/487, following the
+[shared architecture](https://github.com/mucsi96/skeleton-app/issues/105).
+Apply infrastructure before the application deployment: Entra Web registration,
+Redis-backed per-app ForwardAuth, Azure static website and public assets with
+app-origin CORS, scoped upload permissions, `client-storage-config` and
+`forward-auth-config` deployment secrets, and same-origin Faro routing.
+The existing SPA registration remains until the application rollout is verified.
+Exact `POST /api/dictionary` and `GET /api/known-cards` routes target
+`learn-language-server:8080`, retaining caller bearer headers for backend-scoped
+token validation. `/api/environment` uses the ordinary authenticated API route.
+The app pipeline uploads assets before index and deploys the authenticated API
+and static-client charts. Verify login/deep links, both token APIs, and Faro after
+deployment; retire the legacy SPA registration in a later change.
+Infrastructure was applied on 2026-11-02: 20 resources added across the initial
+interrupted run and successful retry, 2 updated, and none destroyed. The auth
+deployment is ready and both OAuth and token-exclusion routes are accepted with
+resolved backend references. Application deployment remains the next rollout step.
+
 Training Log's gateway/static-hosting migration is provisioned in `training_log.tf`
 for https://github.com/mucsi96/training-log-pro/issues/194. Apply this infrastructure
 before the application migration: it adds the Web registration, per-app
