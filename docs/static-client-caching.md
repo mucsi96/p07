@@ -6,7 +6,7 @@ permissions, while the shared client charts set document responses to
 `private, no-cache, no-store`.
 
 The coordinated application changes cover Skeleton/Hello, Cooking, Library,
-Expense Tracker, Observatory, Training Log and PostgreSQL Backup. Each publishes
+Expense Tracker, Observatory, Training Log, PostgreSQL Backup and Learn Language. Each publishes
 assets directly to the `assets` container without a release prefix. All assets, including manifests,
 icons, fonts and bundles, use `public, max-age=31536000, immutable`.
 
@@ -27,7 +27,5 @@ fresh URLs when their content changes.
 
 These changes take effect when each application's updated pipeline deploys;
 existing blobs are removed on that deployment. No Terraform apply is needed.
-Learn Language's current `main` still deploys a container client, so it has no
-Blob upload pipeline to change. Its client chart supplies the document policy
-and its nginx configuration already caches static resources for one year. Adopt
-the replacement and cache contract when migrating that app to Blob hosting.
+Learn Language's migrated static-hosting pipeline follows the same replacement
+and cache contract as the other applications.
