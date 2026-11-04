@@ -235,12 +235,17 @@ resource "kubernetes_config_map_v1" "observatory_dashboard" {
   }) }
 }
 
+data "azurerm_key_vault_secret" "observatory_github_token" {
+  key_vault_id = data.azurerm_key_vault.kv.id
+  name         = "observatory-github-token"
+}
+
 resource "kubernetes_secret_v1" "observatory_github" {
   metadata {
     name      = "observatory-github"
     namespace = kubernetes_namespace_v1.observatory_dashboard.metadata[0].name
   }
-  data = { token = sensitive(data.azurerm_key_vault_secret.github_token.value) }
+  data = { token = sensitive(data.azurerm_key_vault_secret.observatory_github_token.value) }
 }
 
 // Workloads are now owned by observatory-app's deployment pipeline. Preserve the

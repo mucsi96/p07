@@ -124,25 +124,43 @@ so Terraform can manage `DEPLOY_ENABLED` in `observatory-app`.
 Rerun the app pipeline after inventory changes. After token rotation, restart the
 server Deployment to reload the mounted credential, which is read at startup.
 
-#### GitHub token for issue creation
+#### Dedicated Observatory GitHub token
 
-Observatory's server token comes from the same master-vault `github-token` secret.
+Create a dedicated fine-grained personal access token manually in GitHub (for
+example, named `observatory`) and store it in the master `p07` Key Vault as
+`observatory-github-token`. This is separate from `github-token`, which remains
+the Terraform GitHub provider credential. Terraform reads the dedicated secret;
+it does not create the PAT or manage its GitHub permissions. The new secret must
+exist before applying this configuration; there is no fallback to `github-token`.
 Terraform copies it to `observatory/observatory-github` (key `token`). The app's
 deployment pipeline mounts that Secret read-only at `/credentials` and configures
 `GITHUB_TOKEN_FILE=/credentials/token`; the Rust server reads it at startup.
-For a fine-grained token, grant repository **Issues: Read and write** on every
-repository in `local.observatory_apps`, including repository-only entries. Keep
-the existing collector and Terraform permissions, including **Variables: Read and
-write**; issue creation adds a write requirement rather than replacing them.
-A classic token with the documented `repo` scope already includes issue writes
-for repositories its account can access. Issues must also be enabled on each
-target repository. GitHub records the token's account as the issue author; users
+
+Select the repositories in `local.observatory_apps`, including repository-only
+entries, and grant these repository permissions:
+
+| Permission | Access | Used for |
+|---|---|---|
+| Metadata | Read (automatic) | Repository access |
+| Contents | Read | Stack detection from repository trees and manifests |
+| Pull requests | Read | Open PR details |
+| Checks | Read | PR check runs |
+| Commit statuses | Read | Legacy PR status checks |
+| Actions | Read | Deployment/dependency workflow runs, jobs and logs |
+| Issues | Read and write | Issue counts and dashboard issue creation |
+
+The Observatory token does not need Actions variables, Secrets, or Administration
+permissions. Keep the Terraform token's existing permissions for provisioning.
+Issues must also be enabled on each target repository. Update token repository
+access when adding inventory entries, and rotate it before its chosen expiry.
+GitHub records the token's account as the issue author; users
 submit with their Observatory session and do not authenticate to GitHub.
 
 To roll out [direct issue creation](https://github.com/mucsi96/observatory-app/pull/38):
 
-1. Update the GitHub token permissions and, if rotating it, replace `github-token`
-   in the master Key Vault without committing or logging the value.
+1. Create the dedicated token with the permissions above and store it as
+   `observatory-github-token` in the master Key Vault without committing or logging
+   the value. For later rotations, replace this dedicated secret.
 2. After explicit operator approval, apply p07 to provision/assign `createIssues`
    and synchronize the runtime source Secret.
 3. Deploy the Observatory application change. After token rotation, restart the
@@ -275,6 +293,7 @@ platform secrets before running `scripts/create.sh`:
 | `cloudflare-zone-id` | Cloudflare zone ID for DNS management | [Cloudflare dashboard → your zone → Overview → API section (right sidebar)](https://dash.cloudflare.com/) |
 | `authorized-as` | Numeric network ASN allowed by the Cloudflare firewall rules | Your trusted network provider's ASN |
 | `github-token` | GitHub personal access token with `repo` scope | [GitHub → Settings → Developer settings → Personal access tokens](https://github.com/settings/tokens) |
+| `observatory-github-token` | Dedicated Observatory fine-grained PAT: collector read permissions and Issues write access; see [required permissions](#dedicated-observatory-github-token) | [GitHub → Fine-grained personal access tokens](https://github.com/settings/personal-access-tokens) |
 | `cloudflare-api-token` | Cloudflare API token for DNS, rulesets, certificates, and email routing | [Cloudflare dashboard → API Tokens](https://dash.cloudflare.com/profile/api-tokens) |
 | `twingate-network` | Twingate network name | Twingate Admin Console |
 | `twingate-api-token` | Twingate API token | Twingate Admin Console |
