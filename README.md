@@ -144,10 +144,19 @@ entries, and grant these repository permissions:
 | Metadata | Read (automatic) | Repository access |
 | Contents | Read | Stack detection from repository trees and manifests |
 | Pull requests | Read | Open PR details |
-| Checks | Read | PR check runs |
 | Commit statuses | Read | Legacy PR status checks |
 | Actions | Read | Deployment/dependency workflow runs, jobs and logs |
 | Issues | Read and write | Issue counts and dashboard issue creation |
+
+**Checks API limitation:** GitHub does not offer a Checks permission in the
+fine-grained PAT UI and currently lists Checks API access as a
+[fine-grained PAT limitation](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#fine-grained-personal-access-tokens-limitations).
+Actions read and Commit statuses read are not replacements for Checks access.
+If GitHub denies the check-runs request, Observatory shows the PR check status as
+**unknown** while retaining the other repository signals. Issue creation still
+uses Issues write permission. Full authenticated Checks access with narrowly
+scoped permissions requires a GitHub App with Checks read; automatic installation
+token generation/refresh is not implemented by Observatory's static-token setup.
 
 The Observatory token does not need Actions variables, Secrets, or Administration
 permissions. Keep the Terraform token's existing permissions for provisioning.
