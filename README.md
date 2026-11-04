@@ -181,8 +181,15 @@ To roll out [direct issue creation](https://github.com/mucsi96/observatory-app/p
    read-only. A GitHub permission error requires checking the server token's
    repository access and Issues permission, not a personal GitHub browser login.
 
-The role configuration is prepared here; infrastructure apply and production
-verification are separate rollout steps.
+Infrastructure was applied with operator approval on 2026-11-04 using
+`scripts/create.sh`: 2 resources added, 3 changed, and 0 destroyed. This created
+the `createIssues` role ID and owner assignment, updated the API registration and
+dedicated runtime token Secret, and persisted the rotated Netcup refresh token.
+The enabled Entra role/user assignment and exact runtime Secret match with
+`observatory-github-token` were verified without displaying credentials.
+Observatory was restarted to load the dedicated token and completed rollout with
+1/1 replicas ready. The application change in PR #38 remains to be merged and
+deployed; fresh-session issue creation is still an application rollout check.
 
 See the [architecture summary](https://github.com/mucsi96/skeleton-app/issues/105).
 
