@@ -87,12 +87,17 @@ assets and deploying application charts remain owned by the app pipelines.
 **Observatory** lives in its own repository,
 [mucsi96/observatory-app](https://github.com/mucsi96/observatory-app): a Rust/Axum and
 React dashboard for application health, deployed versions, deployment
-jobs, open MRs/PRs with check statuses, and issue counts. `observatory.tf` provisions
-its inventory, read-only collector access, GitHub
+jobs, open MRs/PRs with check statuses, issue counts, and direct issue creation.
+`observatory.tf` provisions its inventory, read-only Kubernetes collector access, GitHub
 deploy identity, Entra Web/API registrations and ingress NetworkPolicy.
 Like skeleton-app, the UI uses per-app oauth2-proxy sessions and chart-owned
 ForwardAuth Middleware. The API independently validates the forwarded token and
-requires `api-access` and the `readApps` role (assigned to the owner by default).
+requires `api-access` and the `readApps` role. Creating issues through the dashboard
+also requires `createIssues`. The `register_api` module declares both roles and
+assigns both to the owner automatically. Additional issue authors need both roles
+assigned on the **Observatory API** enterprise application in Entra; read-only
+users need only `readApps`. After applying this role change, sign out of Observatory
+and sign in again to obtain a fresh API token containing the new role.
 It uses the same `register_api`/`register_web` modules and
 `observatory-api-workload-identity` naming convention as the other apps.
 Fleet snapshots are cached in memory and rebuilt after restarts.
@@ -109,13 +114,48 @@ p07 does not own image pins or build workflows. The GitHub deploy identity reads
 scoped deployment secrets from the dedicated application vault and receives
 namespace-scoped permissions for Helm/chart resources and Middleware in
 `observatory`. The deploy script converts Terraform-owned source configuration
-and credentials into chart-owned config/env Secrets, triggering checksum rollouts.
+into chart-owned config/env Secrets, triggering checksum rollouts. The GitHub
+credential is mounted separately from the Terraform-managed runtime Secret.
 
 Logging exposes same-origin `/_telemetry/collect` on all three app hosts.
 The Terraform GitHub token (`github-token` in Key Vault) needs repository
 **Variables: Read and write** access in addition to its existing permissions,
 so Terraform can manage `DEPLOY_ENABLED` in `observatory-app`.
-Rerun the app pipeline after inventory/token changes to reload them.
+Rerun the app pipeline after inventory changes. After token rotation, restart the
+server Deployment to reload the mounted credential, which is read at startup.
+
+#### GitHub token for issue creation
+
+Observatory's server token comes from the same master-vault `github-token` secret.
+Terraform copies it to `observatory/observatory-github` (key `token`). The app's
+deployment pipeline mounts that Secret read-only at `/credentials` and configures
+`GITHUB_TOKEN_FILE=/credentials/token`; the Rust server reads it at startup.
+For a fine-grained token, grant repository **Issues: Read and write** on every
+repository in `local.observatory_apps`, including repository-only entries. Keep
+the existing collector and Terraform permissions, including **Variables: Read and
+write**; issue creation adds a write requirement rather than replacing them.
+A classic token with the documented `repo` scope already includes issue writes
+for repositories its account can access. Issues must also be enabled on each
+target repository. GitHub records the token's account as the issue author; users
+submit with their Observatory session and do not authenticate to GitHub.
+
+To roll out [direct issue creation](https://github.com/mucsi96/observatory-app/pull/38):
+
+1. Update the GitHub token permissions and, if rotating it, replace `github-token`
+   in the master Key Vault without committing or logging the value.
+2. After explicit operator approval, apply p07 to provision/assign `createIssues`
+   and synchronize the runtime source Secret.
+3. Deploy the Observatory application change. After token rotation, restart the
+   server with `kubectl -n observatory rollout restart deployment/observatory`
+   and check `kubectl -n observatory rollout status deployment/observatory`.
+   A pipeline rerun with unchanged chart values may not restart the pods.
+4. Start a fresh Observatory session and use **Add issue** on an inventory app.
+   Confirm creation succeeds and that a session with only `readApps` remains
+   read-only. A GitHub permission error requires checking the server token's
+   repository access and Issues permission, not a personal GitHub browser login.
+
+The role configuration is prepared here; infrastructure apply and production
+verification are separate rollout steps.
 
 See the [architecture summary](https://github.com/mucsi96/skeleton-app/issues/105).
 

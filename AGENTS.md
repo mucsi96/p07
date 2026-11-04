@@ -18,8 +18,7 @@ Terraform updates: `.github/prompts/update-terraform-versions.md`.
 Read README.md for the provisioning and application ownership boundaries.
 Keep published module references explicit. Check changes for resource replacement,
 database/storage loss, workload identity, and permissions across application namespaces.
-Automation may run Terraform apply/destroy or reinstall the server only with explicit
-user approval for that operation, including when invoked through scripts such as
-`scripts/create.sh`. Ask for approval if it has not already been given; do not ask
-again when the user has explicitly approved the same operation.
+Automation may propose changes and run Terraform apply only after asking the user
+and receiving explicit approval for that operation. This includes scripts that
+invoke Terraform apply. Terraform destroy and server reinstall remain prohibited.
 Never include state, plan files, kubeconfigs, or credentials in a PR.
