@@ -259,9 +259,6 @@ locals {
   # in each app's Key Vault so the SPA can use it without further URL juggling.
   client_log_url = "https://${local.faro_hostname}/collect"
 
-  oauth2_proxy_chart_version = "10.7.1"  #https://github.com/oauth2-proxy/manifests/releases
-  oauth2_proxy_image_version = "v7.15.2" #https://github.com/oauth2-proxy/oauth2-proxy/releases
-
   expense_tracker_hostname = "expenses.${data.azurerm_key_vault_secret.dns_zone.value}"
   bank_notifications_path  = "/api/bank-notifications"
 }
@@ -313,14 +310,14 @@ data "cloudflare_ip_ranges" "cloudflare" {}
 # Created before the server: its connector tokens are baked into the Netcup
 # installation script. No depends_on; it must not order after setup_cluster.
 module "setup_twingate_connector" {
-  source           = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_twingate_connector?ref=v-102"
+  source           = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_twingate_connector?ref=v-104"
   environment_name = var.environment_name
 }
 
 # Needs the server's address/port, so it orders after provision_server
 # via field references. No depends_on (would cycle with ssh_ready_wait_for).
 module "setup_twingate_access" {
-  source            = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_twingate_access?ref=v-102"
+  source            = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_twingate_access?ref=v-104"
   environment_name  = var.environment_name
   remote_network_id = module.setup_twingate_connector.remote_network_id
   k8s_host          = module.provision_server.ipv4_address
@@ -330,7 +327,7 @@ module "setup_twingate_access" {
 }
 
 module "provision_server" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/provision_server?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/provision_server?ref=v-104"
 
   server_name             = var.environment_name
   netcup_server_id        = tonumber(data.azurerm_key_vault_secret.netcup_server_id.value)
@@ -350,7 +347,7 @@ module "provision_server" {
 }
 
 module "setup_cluster" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_cluster?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_cluster?ref=v-104"
 
   host                     = module.provision_server.ipv4_address
   ssh_port                 = module.provision_server.ssh_port
@@ -376,18 +373,18 @@ module "setup_cluster" {
 }
 
 module "create_redis_namespace" {
-  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/create_app_namespace?ref=v-102"
+  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/create_app_namespace?ref=v-104"
   k8s_namespace = "redis"
 }
 
 module "create_redis" {
-  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_redis?ref=v-102"
+  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_redis?ref=v-104"
   k8s_name      = "redis"
   k8s_namespace = module.create_redis_namespace.k8s_namespace
 }
 
 module "setup_ingress_controller" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_ingress_controller?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_ingress_controller?ref=v-104"
 
   dns_zone              = data.azurerm_key_vault_secret.dns_zone.value
   k8s_config            = module.setup_cluster.k8s_config
@@ -409,19 +406,19 @@ module "setup_ingress_controller" {
 }
 
 module "create_database_namespace" {
-  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/create_app_namespace?ref=v-102"
+  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/create_app_namespace?ref=v-104"
   k8s_namespace = "db"
 }
 
 module "setup_monitoring_crds" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_monitoring_crds?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_monitoring_crds?ref=v-104"
 
   monitoring_crds_chart_version = "32.0.2" #https://github.com/prometheus-community/helm-charts/releases?q=prometheus-operator-crds
   wait_for                      = module.setup_ingress_controller.ingress_controller_ready
 }
 
 module "create_database" {
-  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/create_postgres_database?ref=v-102"
+  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/create_postgres_database?ref=v-104"
   k8s_name      = "postgres1"
   k8s_namespace = module.create_database_namespace.k8s_namespace
   db_name       = "postgres1"
@@ -461,7 +458,7 @@ locals {
 }
 
 module "register_grafana_dashboard" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_webapp?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_webapp?ref=v-104"
 
   display_name  = "Grafana - ${var.environment_name}"
   owner         = local.owner
@@ -469,7 +466,7 @@ module "register_grafana_dashboard" {
 }
 
 module "setup_victoria_metrics" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_victoria_metrics?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_victoria_metrics?ref=v-104"
 
   grafana_hostname                         = local.grafana_hostname
   tenant_id                                = data.azurerm_client_config.current.tenant_id
@@ -477,8 +474,7 @@ module "setup_victoria_metrics" {
   grafana_client_secret                    = module.register_grafana_dashboard.client_secret
   valid_email                              = data.azurerm_key_vault_secret.letsencrypt_email.value
   victoria_metrics_k8s_stack_chart_version = "0.97.0" #https://github.com/VictoriaMetrics/helm-charts/releases?q=victoria-metrics-k8s-stack
-  oauth2_proxy_chart_version               = local.oauth2_proxy_chart_version
-  oauth2_proxy_image_version               = local.oauth2_proxy_image_version
+  trusted_proxy_cidrs                      = local.app_forward_auth.trusted_proxy_cidrs
   session_redis = {
     connection_url = module.create_redis.connection_url
     password       = module.create_redis.password
@@ -489,7 +485,7 @@ module "setup_victoria_metrics" {
 }
 
 module "setup_victoria_logs" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_victoria_logs?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_victoria_logs?ref=v-104"
 
   alloy_chart_version = "1.15.0" #https://github.com/grafana/helm-charts/releases?q=alloy
   # In-cluster VLSingle API URL owned by the stack module; Alloy pushes both

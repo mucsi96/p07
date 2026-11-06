@@ -5,14 +5,14 @@ locals {
 }
 
 module "library_postgres_schema" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_postgres_schema?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_postgres_schema?ref=v-104"
 
   database = local.database
   schema   = "library"
 }
 
 module "library_app_base" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_base?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_base?ref=v-104"
 
   github_repository = "library-app"
   environment_name  = var.environment_name
@@ -39,7 +39,7 @@ module "library_app_base" {
 }
 
 module "library_client_storage" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_static_website?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_static_website?ref=v-104"
 
   name                = "${var.environment_name}libweb${substr(sha256(var.azure_subscription_id), 0, 8)}"
   resource_group_name = var.environment_name
@@ -49,7 +49,7 @@ module "library_client_storage" {
 }
 
 module "setup_library_web" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_web?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_web?ref=v-104"
   owner  = local.owner
 
   display_name  = "Library Web"
@@ -62,7 +62,7 @@ module "setup_library_web" {
 }
 
 module "library_forward_auth" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_forwardauth?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_forwardauth?ref=v-104"
 
   name                = "library"
   namespace           = module.library_app_base.namespace
@@ -77,7 +77,7 @@ module "library_forward_auth" {
 }
 
 module "setup_library_api" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_api?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_api?ref=v-104"
   owner  = local.owner
 
   display_name = "Library API"
@@ -91,7 +91,7 @@ module "setup_library_api" {
 module "setup_library_spa" {
   # Retained until the gateway app rollout is verified, so the currently
   # deployed SPA can still sign in during infrastructure provisioning.
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_spa?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_spa?ref=v-104"
   owner  = local.owner
 
   display_name  = "Library SPA"

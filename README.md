@@ -77,10 +77,30 @@ Its pipeline has separately scoped Entra upload permissions for both containers.
 The document-only `static-client-app` **5.0.0** chart provides authenticated SPA
 routing. Faro configuration is compiled into each app; documents need no body
 injection. Terraform publishes storage metadata and owns per-app ForwardAuth
-**8.0.0**. All module sources pin **v-102**, including the disabled Party definition.
+**10.0.0**, including Grafana in email-header mode. All module sources pin
+**v-104**, including the disabled Party definition.
 `scripts/create.sh` completed on 2026-11-01 with no move blocks: 0 additions,
 1 update (the rotated Netcup refresh token), and 0 deletions. Publishing
 assets and deploying application charts remain owned by the app pipelines.
+
+The v-103 upgrade was applied with operator approval on 2026-11-06 using
+`scripts/create.sh`: 5 added, 10 changed, and 2 destroyed. Grafana now uses the
+shared ForwardAuth module and chart 9.0.0 with its email allowlist. The old proxy
+Helm resource and cookie generator were replaced; database and storage resources
+had no planned changes. All nine proxy deployments became ready on chart 9.0.0.
+Grafana's application and OAuth routes are accepted with resolved references.
+Anonymous requests and spoofed identity headers both redirect to Entra through
+Traefik. The public probe returned 403, and browser sign-in subsequently exposed
+the email-claim bug corrected by the v-104 rollout below. Existing Grafana
+users need a fresh login because the session cookie changed.
+
+The v-104 follow-up was applied with operator approval on 2026-11-06 using
+`scripts/create.sh`: 0 added, 10 changed, and 0 destroyed. All nine proxy releases
+now run chart 10.0.0 and their deployments are ready. Grafana's live configuration
+uses the email claim without the deprecated `userIDClaim` override that caused
+post-login 403 responses; its email allowlist remains enforced. Both Grafana
+HTTPRoutes are accepted with resolved references. The operator confirmed
+successful Grafana browser sign-in after this rollout.
 
 ## Application dashboard
 

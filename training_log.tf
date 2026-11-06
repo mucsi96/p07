@@ -5,14 +5,14 @@ locals {
 }
 
 module "training_log_postgres_schema" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_postgres_schema?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_postgres_schema?ref=v-104"
 
   database = local.database
   schema   = "training_log"
 }
 
 module "training_log_app_base" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_base?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_base?ref=v-104"
 
   github_repository = "training-log-pro"
   environment_name  = var.environment_name
@@ -42,7 +42,7 @@ module "training_log_app_base" {
 }
 
 module "setup_training_log_api" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_api?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_api?ref=v-104"
   owner  = local.owner
 
   display_name = "Training Log API"
@@ -54,7 +54,7 @@ module "setup_training_log_api" {
 }
 
 module "setup_training_log_spa" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_spa?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_spa?ref=v-104"
   owner  = local.owner
 
   display_name  = "Training Log SPA"
@@ -68,7 +68,7 @@ module "setup_training_log_spa" {
 # Retain the existing SPA registration during the coordinated app rollout.
 # Removing it before the app deploy would invalidate the currently served UI.
 module "setup_training_log_web" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_web?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_web?ref=v-104"
   owner  = local.owner
 
   display_name  = "Training Log Web"
@@ -81,7 +81,7 @@ module "setup_training_log_web" {
 }
 
 module "training_log_client_storage" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_static_website?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_static_website?ref=v-104"
 
   name                = "${var.environment_name}trainweb${substr(sha256(var.azure_subscription_id), 0, 8)}"
   resource_group_name = var.environment_name
@@ -91,7 +91,7 @@ module "training_log_client_storage" {
 }
 
 module "training_log_forward_auth" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_forwardauth?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_forwardauth?ref=v-104"
 
   name                = "training-log"
   namespace           = module.training_log_app_base.namespace

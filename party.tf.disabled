@@ -6,7 +6,7 @@ locals {
 }
 
 module "party_app_base" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_base?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_base?ref=v-104"
 
   github_repository      = "speaking-character"
   environment_name       = var.environment_name
@@ -26,7 +26,7 @@ module "party_app_base" {
 }
 
 module "setup_party_api" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_api?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_api?ref=v-104"
   owner  = local.owner
 
   display_name = "Party API"
@@ -38,7 +38,7 @@ module "setup_party_api" {
 }
 
 module "setup_party_spa" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_spa?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_spa?ref=v-104"
   owner  = local.owner
 
   display_name  = "Party SPA"

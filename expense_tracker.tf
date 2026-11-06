@@ -5,14 +5,14 @@ locals {
 }
 
 module "expense_tracker_postgres_schema" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_postgres_schema?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_postgres_schema?ref=v-104"
 
   database = local.database
   schema   = "expensetracker"
 }
 
 module "expense_tracker_app_base" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_base?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_base?ref=v-104"
 
   github_repository = "expense-tracker"
   environment_name  = var.environment_name
@@ -36,7 +36,7 @@ module "expense_tracker_app_base" {
 }
 
 module "expense_tracker_client_storage" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_static_website?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_static_website?ref=v-104"
 
   name                = "${var.environment_name}expenses${substr(sha256(var.azure_subscription_id), 0, 8)}"
   resource_group_name = var.environment_name
@@ -46,7 +46,7 @@ module "expense_tracker_client_storage" {
 }
 
 module "setup_expense_tracker_web" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_web?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_web?ref=v-104"
   owner  = local.owner
 
   display_name  = "Expense Tracker Web"
@@ -59,7 +59,7 @@ module "setup_expense_tracker_web" {
 }
 
 module "expense_tracker_forward_auth" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_forwardauth?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_forwardauth?ref=v-104"
 
   name                = "expense-tracker"
   namespace           = module.expense_tracker_app_base.namespace
@@ -80,7 +80,7 @@ module "expense_tracker_forward_auth" {
 }
 
 module "setup_expense_tracker_api" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_api?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_api?ref=v-104"
   owner  = local.owner
 
   display_name = "Expense Tracker API"
@@ -94,7 +94,7 @@ module "setup_expense_tracker_api" {
 # Retain the old registration during cutover so the currently deployed SPA
 # remains usable until the application PR is deployed. Remove in a follow-up.
 module "setup_expense_tracker_spa" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_spa?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_spa?ref=v-104"
   owner  = local.owner
 
   display_name  = "Expense Tracker SPA"
