@@ -75,7 +75,7 @@ locals {
 }
 
 module "backup_app_base" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_base?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_base?ref=v-104"
 
   github_repository = "postgres-azure-backup"
   environment_name  = var.environment_name
@@ -99,7 +99,7 @@ module "backup_app_base" {
 }
 
 module "setup_backup_api" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_api?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_api?ref=v-104"
   owner  = local.owner
 
   display_name = "Backup API"
@@ -111,7 +111,7 @@ module "setup_backup_api" {
 }
 
 module "setup_backup_web" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_web?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_web?ref=v-104"
   owner  = local.owner
 
   display_name  = "Backup Web"
@@ -125,7 +125,7 @@ module "setup_backup_web" {
 }
 
 module "backup_client_storage" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_static_website?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_static_website?ref=v-104"
 
   name                = "${var.environment_name}backupweb${substr(sha256(var.azure_subscription_id), 0, 8)}"
   resource_group_name = var.environment_name
@@ -135,7 +135,7 @@ module "backup_client_storage" {
 }
 
 module "backup_forward_auth" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_forwardauth?ref=v-102"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_forwardauth?ref=v-104"
 
   name                = "backup"
   namespace           = module.backup_app_base.namespace
