@@ -55,6 +55,22 @@ module "setup_learn_language_api" {
   k8s_service_account_name      = "learn-language-api-workload-identity"
 }
 
+data "azurerm_storage_account" "learn_language_story_storage" {
+  name                = "ibari"
+  resource_group_name = "ibari"
+}
+
+data "azurerm_storage_container" "learn_language_stories" {
+  name               = "learn-language"
+  storage_account_id = data.azurerm_storage_account.learn_language_story_storage.id
+}
+
+resource "azurerm_role_assignment" "learn_language_story_reader" {
+  scope                = data.azurerm_storage_container.learn_language_stories.id
+  role_definition_name = "Storage Blob Data Reader"
+  principal_id         = module.setup_learn_language_api.resource_object_id
+}
+
 module "setup_learn_language_spa" {
   source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_spa?ref=v-104"
   owner  = local.owner
