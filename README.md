@@ -40,10 +40,16 @@ for the applied result and compatibility with older state snapshots.
 
 `learn_language.tf` grants the Learn Language API workload identity **Storage
 Blob Data Reader** on the existing `learn-language` container in storage account
-`ibari` (resource group `ibari`). Story discovery lists blobs and reads transcripts
+`ibari` (resource group `ibari`), including the `stories/` prefix. Story discovery lists blobs and reads transcripts
 and audio using this identity. Apply this permission before deploying Azure audio
 collections; without it, discovery fails with `AuthorizationPermissionMismatch`.
 The storage account and container are referenced as data sources, not managed here.
+
+Existing app audio, images, and PDFs use the local `/app/storage` persistent volume
+since the November 2025 storage migration, not Azure RBAC. The identically named
+`audio/`, `images/`, and `sources/` folders still present in Azure do not imply an
+existing API role assignment. The container-scoped reader role also covers new
+story folders, so moving collections under `stories/` needs no additional grant.
 
 Applied on 2026-11-07 with `scripts/create.sh`: 1 added, 1 changed (Netcup refresh
 token rotation), and 0 destroyed. Blob listing and transcript download were
