@@ -36,6 +36,19 @@ The live p07 state has already migrated to these top-level definitions, and the
 completed move blocks have been removed. See [the ownership migration](docs/application-ownership.md)
 for the applied result and compatibility with older state snapshots.
 
+## Learn Language story storage
+
+`learn_language.tf` grants the Learn Language API workload identity **Storage
+Blob Data Reader** on the existing `learn-language` container in storage account
+`ibari` (resource group `ibari`). Story discovery lists blobs and reads transcripts
+and audio using this identity. Apply this permission before deploying Azure audio
+collections; without it, discovery fails with `AuthorizationPermissionMismatch`.
+The storage account and container are referenced as data sources, not managed here.
+
+Applied on 2026-11-07 with `scripts/create.sh`: 1 added, 1 changed (Netcup refresh
+token rotation), and 0 destroyed. Blob listing and transcript download were
+verified with the running API pod's workload identity, both returning HTTP 200.
+
 ## Static client hosting
 
 Learn Language's migration is defined in `learn_language.tf` for
