@@ -46,9 +46,10 @@ collections; without it, discovery fails with `AuthorizationPermissionMismatch`.
 The storage account and container are referenced as data sources, not managed here.
 
 Existing app audio, images, and PDFs use the local `/app/storage` persistent volume
-since the November 2025 storage migration, not Azure RBAC. The identically named
-`audio/`, `images/`, and `sources/` folders still present in Azure do not imply an
-existing API role assignment. The container-scoped reader role also covers new
+since the November 2025 storage migration, not Azure RBAC. The obsolete Azure
+`audio/`, `images/`, and `sources/` folders were deleted on 2026-11-07 (389 blobs).
+The container now contains only `stories/`, with all 212 story blobs verified
+unchanged after cleanup. The container-scoped reader role also covers new
 story folders, so moving collections under `stories/` needs no additional grant.
 
 Applied on 2026-11-07 with `scripts/create.sh`: 1 added, 1 changed (Netcup refresh
