@@ -142,7 +142,7 @@ It uses the same `register_api`/`register_web` modules and
 `observatory-api-workload-identity` naming convention as the other apps.
 Fleet snapshots are cached in memory and rebuilt after restarts.
 
-The inventory also tracks `mucsi96/p07` and `mucsi96/k8s-modules` as
+The inventory also tracks `mucsi96/p07`, `mucsi96/k8s-modules`, and `mucsi96/react-ui` as
 repository-only entries: PRs, checks, issues and dependency updates without Kubernetes
 workloads. Empty namespaces skip Kubernetes collection and namespace RBAC;
 workload health is shown as not applicable.
