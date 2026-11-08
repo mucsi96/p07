@@ -158,6 +158,12 @@ locals {
       repository = "mucsi96/k8s-modules"
       url        = "https://github.com/mucsi96/k8s-modules"
     },
+    {
+      name       = "React UI"
+      namespace  = ""
+      repository = "mucsi96/react-ui"
+      url        = "https://github.com/mucsi96/react-ui"
+    },
     ], [{
       name       = "Observatory"
       namespace  = local.observatory_name
