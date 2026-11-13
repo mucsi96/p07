@@ -23,7 +23,8 @@ locals {
       schema          = "training_log"
       createPlainDump = true
       excludeTables = [
-        "oauth2_authorized_client"
+        "oauth2_authorized_client",
+        "device_book"
       ]
     }),
     merge(local.backup_db, module.setup_victoria_metrics.database_credentials, {
