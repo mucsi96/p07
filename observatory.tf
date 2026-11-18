@@ -175,7 +175,7 @@ locals {
 resource "terraform_data" "observatory_ready" { input = module.setup_ingress_controller.ingress_controller_ready }
 
 module "observatory_client_storage" {
-  source              = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_static_website?ref=v-104"
+  source              = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_static_website?ref=v-106"
   name                = "${var.environment_name}obsweb${substr(sha256(var.azure_subscription_id), 0, 8)}"
   resource_group_name = var.environment_name
   location            = var.azure_location
@@ -267,7 +267,7 @@ removed {
 }
 
 module "setup_observatory_api" {
-  source                        = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_api?ref=v-104"
+  source                        = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_api?ref=v-106"
   owner                         = local.owner
   display_name                  = "Observatory API"
   roles                         = ["readApps", "createIssues"]
@@ -277,7 +277,7 @@ module "setup_observatory_api" {
 }
 
 module "setup_observatory_web" {
-  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_web?ref=v-104"
+  source        = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_web?ref=v-106"
   owner         = local.owner
   display_name  = "Observatory Web"
   redirect_uris = ["https://${local.observatory_hostname}/oauth2/callback"]
@@ -289,7 +289,7 @@ module "setup_observatory_web" {
 }
 
 module "observatory_forward_auth" {
-  source              = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_forwardauth?ref=v-104"
+  source              = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_forwardauth?ref=v-106"
   name                = local.observatory_name
   namespace           = kubernetes_namespace_v1.observatory_dashboard.metadata[0].name
   hostname            = local.observatory_hostname
