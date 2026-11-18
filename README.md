@@ -168,9 +168,8 @@ into chart-owned config/env Secrets, triggering checksum rollouts. The GitHub
 credential is mounted separately from the Terraform-managed runtime Secret.
 
 Logging exposes same-origin `/_telemetry/collect` on all three app hosts.
-The Terraform GitHub token (`github-token` in Key Vault) needs repository
-**Variables: Read and write** access in addition to its existing permissions,
-so Terraform can manage `DEPLOY_ENABLED` in `observatory-app`.
+The app pipeline deploys after successful publication on `main`; provision its
+deployment credentials and infrastructure before running it.
 Rerun the app pipeline after inventory changes. After token rotation, restart the
 server Deployment to reload the mounted credential, which is read at startup.
 
@@ -339,6 +338,9 @@ The server module exchanges the stored refresh token for short-lived access
 tokens as needed and persists Netcup's rotated token after each apply.
 
 ### Azure backend
+
+For the Switzerland North migration, see the
+[scoped app vault/frontend-storage cleanup](docs/app-azure-cleanup.md).
 
 Bootstrap the resource group, Key Vault, storage account, and tfstate
 container, and write `backend.tf` locally:
