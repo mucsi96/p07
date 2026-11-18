@@ -5,14 +5,14 @@ locals {
 }
 
 module "learn_language_postgres_schema" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_postgres_schema?ref=v-104"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_postgres_schema?ref=v-106"
 
   database = local.database
   schema   = "learn_language"
 }
 
 module "learn_language_app_base" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_base?ref=v-104"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_base?ref=v-106"
 
   github_repository = "learn-language"
   environment_name  = var.environment_name
@@ -44,7 +44,7 @@ module "learn_language_app_base" {
 }
 
 module "setup_learn_language_api" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_api?ref=v-104"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_api?ref=v-106"
   owner  = local.owner
 
   display_name = "Learn Language API"
@@ -72,7 +72,7 @@ resource "azurerm_role_assignment" "learn_language_story_reader" {
 }
 
 module "setup_learn_language_spa" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_spa?ref=v-104"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_spa?ref=v-106"
   owner  = local.owner
 
   display_name  = "Learn Language SPA"
@@ -84,7 +84,7 @@ module "setup_learn_language_spa" {
 }
 
 module "setup_learn_language_web" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_web?ref=v-104"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/register_web?ref=v-106"
   owner  = local.owner
 
   display_name  = "Learn Language Web"
@@ -97,7 +97,7 @@ module "setup_learn_language_web" {
 }
 
 module "learn_language_client_storage" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_static_website?ref=v-104"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_static_website?ref=v-106"
 
   name                = "${var.environment_name}langweb${substr(sha256(var.azure_subscription_id), 0, 8)}"
   resource_group_name = var.environment_name
@@ -107,7 +107,7 @@ module "learn_language_client_storage" {
 }
 
 module "learn_language_forward_auth" {
-  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_forwardauth?ref=v-104"
+  source = "git::https://github.com/mucsi96/k8s-modules.git//modules/setup_app_forwardauth?ref=v-106"
 
   name                = "learn-language"
   namespace           = module.learn_language_app_base.namespace

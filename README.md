@@ -98,7 +98,7 @@ The document-only `static-client-app` **5.0.0** chart provides authenticated SPA
 routing. Faro configuration is compiled into each app; documents need no body
 injection. Terraform publishes storage metadata and owns per-app ForwardAuth
 **10.0.0**, including Grafana in email-header mode. All module sources pin
-**v-104**, including the disabled Party definition.
+**v-106**, including the disabled Party definition.
 `scripts/create.sh` completed on 2026-11-01 with no move blocks: 0 additions,
 1 update (the rotated Netcup refresh token), and 0 deletions. Publishing
 assets and deploying application charts remain owned by the app pipelines.
@@ -121,6 +121,16 @@ uses the email claim without the deprecated `userIDClaim` override that caused
 post-login 403 responses; its email allowlist remains enforced. Both Grafana
 HTTPRoutes are accepted with resolved references. The operator confirmed
 successful Grafana browser sign-in after this rollout.
+
+The v-106 module update was applied with operator approval on 2026-11-18 using
+`scripts/create.sh`: 0 added, 21 changed, and 0 destroyed. All 63 active module
+sources and the three disabled Party sources now pin v-106. The rollout updates
+monitoring resource reservations and preserves Faro browser exception details;
+the remaining updates normalize empty RBAC metadata and rotate the Netcup token.
+Database/storage resources and RBAC subjects/roles were unchanged. Monitoring
+and logging pods are ready. A synthetic Faro ingestion check confirmed that
+exception type, message and stack trace reach VictoriaLogs, while console
+formatting and event attributes remain intact.
 
 ## Application dashboard
 
