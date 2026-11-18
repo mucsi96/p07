@@ -2,6 +2,12 @@
 
 set -euo pipefail
 
+plan_only=false
+if [ "${1:-}" = "--plan-only" ]; then
+  plan_only=true
+  shift
+fi
+
 source .venv/bin/activate
 unset PYTHONPATH
 
@@ -56,4 +62,6 @@ if [ -n "$vault_name" ] && command -v az >/dev/null 2>&1; then
 fi
 
 terraform plan -destroy -out=tfplan "$@"
-terraform apply -auto-approve tfplan
+if [ "$plan_only" = false ]; then
+  terraform apply -auto-approve tfplan
+fi

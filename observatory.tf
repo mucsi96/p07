@@ -119,22 +119,6 @@ resource "github_actions_secret" "observatory_deploy" {
   value       = local.observatory_deploy_secrets[each.key]
 }
 
-resource "github_actions_variable" "observatory_deploy_enabled" {
-  repository    = "observatory-app"
-  variable_name = "DEPLOY_ENABLED"
-  value         = "true"
-  depends_on = [
-    github_actions_secret.observatory_deploy,
-    azuread_application_federated_identity_credential.observatory_github_deploy,
-    azurerm_role_assignment.observatory_deploy_config,
-    module.observatory_forward_auth,
-    kubernetes_role_binding_v1.observatory_deploy,
-    kubernetes_role_binding_v1.observatory_reader,
-    kubernetes_config_map_v1.observatory_dashboard,
-    kubernetes_secret_v1.observatory_github,
-  ]
-}
-
 locals {
   observatory_name                     = "observatory"
   observatory_api_service_account_name = "observatory-api-workload-identity"
