@@ -24,6 +24,6 @@ if [ "${#targets[@]}" -eq 0 ]; then
   exit 0
 fi
 
-# Reuse the existing SSH/provider setup and Terraform plan/apply workflow.
-# Terraform also destroys downstream dependents of these targets.
-bash scripts/destroy.sh "$@" "${targets[@]}"
+# Reuse the existing SSH/provider setup, but only generate a plan.
+# Terraform includes downstream dependents of these targets in the plan.
+bash scripts/destroy.sh --plan-only "${targets[@]}"
